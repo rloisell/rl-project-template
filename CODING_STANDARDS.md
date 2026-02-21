@@ -154,10 +154,52 @@ count++;
 - `DEPLOYMENT_ANALYSIS.md` (project-specific) — how the project aligns with platform requirements
 - `DEPLOYMENT_NEXT_STEPS.md` (project-specific) — ordered list of remaining deployment actions
 
-### AI/ directory (optional)
-- `WORKLOG.md` — detailed, chronological build log
-- `nextSteps.md` — feature backlog and completion status
-- `securityNextSteps.md` — security hardening plan
+### AI/ directory (required)
+
+Every project **must** contain an `AI/` directory at the repository root.
+This directory is the auditable record of all AI-assisted work and must be
+kept current throughout the project. It is committed alongside all other source.
+
+| File | Purpose | Required |
+|------|---------|----------|
+| `WORKLOG.md` | Chronological, session-by-session narrative of every AI action, decision, and outcome — written in plain English | **Yes** |
+| `CHANGES.csv` | Machine-readable per-file change log: `path,action,notes` one row per file touched by the AI | **Yes** |
+| `COMMANDS.sh` | Commented record of every significant shell command the AI ran (scrubs, compiles, migrations, deployments) | **Yes** |
+| `COMMIT_INFO.txt` | Commit metadata for major AI-driven operations: branch, hash, message, push outcome | **Yes** |
+| `nextSteps.md` | Feature and task backlog with completion status | Recommended |
+| `securityNextSteps.md` | Security hardening plan and outstanding findings | When applicable |
+
+#### WORKLOG.md format
+
+Each session appended as a dated section:
+
+```markdown
+## Session N — YYYY-MM-DD
+
+**Objective**: <what was being worked on>
+
+### Actions taken
+- <AI action 1>
+- <AI action 2>
+
+### Files created or modified
+- `path/to/file.ext` — <what changed and why>
+
+### Commits
+- `<hash>` — <message>
+
+### Outcomes / Notes
+- <anything notable: failures, deferrals, user decisions>
+```
+
+#### CHANGES.csv format
+
+```
+path,action,notes
+src/mts/dsc/servlet/LoginServlet.java,modified,added file header and end marker
+```
+
+Valid actions: `added`, `modified`, `deleted`, `created`, `deployed`, `compiled`.
 
 ---
 
@@ -197,6 +239,10 @@ Keep this section in sync with that file.
 - Use the service-layer pattern — controllers delegate to services, services own logic
 - Name bool-returning helpers with a verb: `IsExpenseBudget()`, `HasValue()`, `CanAccess()`
 - Follow existing naming conventions in the file before introducing new ones
+- **Update `AI/WORKLOG.md`** at the end of every session with a dated section covering all actions, files changed, and commits
+- **Append to `AI/CHANGES.csv`** one row per file the AI creates, modifies, or deletes
+- **Append to `AI/COMMANDS.sh`** every significant shell command run (compiles, migrations, deploys, git operations)
+- **Update `AI/COMMIT_INFO.txt`** after any major commit or push with branch, hash, message, and outcome
 
 ### NEVER
 - Add student IDs, course names, or academic metadata to file headers

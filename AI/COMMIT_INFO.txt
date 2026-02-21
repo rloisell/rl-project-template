@@ -1,0 +1,13 @@
+AI Commit Log
+==============
+Record of significant commits and pushes driven by the AI.
+Append one entry per major operation. Do not remove previous entries.
+
+Format per entry:
+  Date:    YYYY-MM-DD
+  Branch:  <branch-name>
+  Hash:    <short-hash>
+  Message: <commit subject>
+  Push:    succeeded | failed | deferred
+  Notes:   <anything notable>
+

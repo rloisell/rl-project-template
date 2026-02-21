@@ -101,6 +101,10 @@ Mark any large AI-generated block: `// AI-assisted: <what was generated>`
 - Add ALL-CAPS section labels between logical groups
 - Add `} // end ClassName` at end of every class
 - Follow the service-layer pattern
+- **Update `AI/WORKLOG.md`** at the end of every session with a dated section summarising all actions taken, files changed, and commits made
+- **Append to `AI/CHANGES.csv`** for every file the AI creates, modifies, or deletes
+- **Append to `AI/COMMANDS.sh`** for every significant shell command run (compiles, migrations, deploys, git operations)
+- **Update `AI/COMMIT_INFO.txt`** after any major commit or push with hash, branch, and outcome
 
 ## NEVER
 - Add academic metadata (student IDs, course names)
