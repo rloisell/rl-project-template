@@ -1,0 +1,35 @@
+# .NET build output
+bin/
+obj/
+*.user
+*.suo
+.vs/
+
+# .NET secrets
+appsettings.Development.json
+appsettings.*.json
+!appsettings.json
+!appsettings.Development.json.example
+
+# Node / Vite
+node_modules/
+dist/
+.vite/
+
+# macOS
+.DS_Store
+.AppleDouble
+
+# IDE
+.idea/
+*.swp
+*~
+
+# Logs
+*.log
+logs/
+
+# Environment files
+.env
+.env.local
+.env.*.local
