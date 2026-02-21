@@ -470,3 +470,14 @@ These steps require human action via BC Gov processes — they cannot be automat
 | [`bcgov-c/JAG-JAM-CORNET`](https://github.com/bcgov-c/JAG-JAM-CORNET) | Peer ISB project — Trivy scans + build-and-test.yml pattern |
 | [`bcgov-c/JAG-LEA`](https://github.com/bcgov-c/JAG-LEA) | Peer ISB project — CI/CD pipeline reference |
 | [`bcgov/security-pipeline-templates`](https://github.com/bcgov/security-pipeline-templates) | BC Gov GitHub Actions and Tekton pipeline templates |
+
+### 9.13 AI Code Review
+
+GitHub Copilot Code Review is enabled on this project. It auto-reviews every non-draft PR using the workflow at `.github/workflows/copilot-review.yml`.
+
+**What it flags:** Code correctness, potential bugs, security anti-patterns, naming inconsistency, and dead code. Inline suggestions appear on the PR diff and can be applied directly.
+
+**Setup requirements:**
+- GitHub Copilot for Business or Enterprise enabled on the organization
+- `copilot-review.yml` workflow committed to the app repo (see `EmeraldDeploymentAnalysis.md` §8.3 for the full template)
+- Optionally enable the auto-reviewer toggle: Settings → Code review → GitHub Copilot

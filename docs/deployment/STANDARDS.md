@@ -118,6 +118,7 @@ git SHA. Git SHAs are acceptable for dev/test environments.
 - [ ] Verify `GET /health` and `GET /health/ready` endpoints exist and return 200
 - [ ] Update `.github/workflows/build-and-push.yml` -- replace `<LICENSE>`, `<APP_NAME>`, `<GITOPS_REPO>` placeholders
 - [ ] Remove hard-coded `localhost` references from `appsettings.json` (move to env vars)
+- [ ] Add `.github/workflows/copilot-review.yml` to auto-request GitHub Copilot Code Review on every non-draft PR (see `EmeraldDeploymentAnalysis.md` §8.3)
 
 ### Step 3 -- GitOps Repo
 
@@ -146,6 +147,7 @@ git SHA. Git SHAs are acceptable for dev/test environments.
 - [ ] Review and merge the auto-generated PR in the GitOps repo
 - [ ] Confirm ArgoCD syncs to `<license>-prod`
 - [ ] Confirm Datree CI step is passing in the GitOps repo
+- [ ] Confirm GitHub Copilot Code Review is enabled on the org and auto-requested on PRs
 
 ---
 
@@ -165,6 +167,7 @@ git SHA. Git SHAs are acceptable for dev/test environments.
 | Helm lint + Datree CI | GitOps repo | `.github/workflows/ci.yml` |
 | Datree policy enforcement | GitOps repo | `.github/workflows/policy-enforcement.yaml` |
 | Datree policy config | GitOps repo | `.github/policies.yaml` |
+| Copilot code review workflow | App repo | `.github/workflows/copilot-review.yml` |
 
 ---
 
