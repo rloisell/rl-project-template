@@ -68,3 +68,22 @@ jobs:
           --namespace <LICENSE>-prod
           --values deploy/prod_values.yaml
           > /dev/null
+
+      # -- Emerald Security Policy Enforcer -----------------------------------
+      # Mandatory per ISB EA Option 2.  Datree validates rendered Helm templates
+      # against ISB-configured policies, including the required DataClass label
+      # check (CUSTOM_WORKLOAD_INCORRECT_DATACLASS_LABELS).
+      #
+      # DATREE_TOKEN: obtain from ISB (Emerald platform team) and store as a
+      # GitHub Actions Secret in this GitOps repo.
+      # Policy configuration: .github/policies.yaml
+      - name: Emerald Security Policy Check (Datree)
+        uses: datreeio/action-datree@main
+        with:
+          path: 'charts/app'
+          cliArguments: '--only-k8s-files --policy-config .github/policies.yaml'
+          isHelmChart: true
+          helmArguments: '--values deploy/dev_values.yaml'
+        env:
+          DATREE_TOKEN: ${{ secrets.DATREE_TOKEN }}
+
