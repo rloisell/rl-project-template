@@ -1,0 +1,55 @@
+# .github/workflows/policy-enforcement.yaml
+# Ryan Loiselle -- Developer / Architect | GitHub Copilot | February 2026
+#
+# Datree security policy check for Helm charts.
+# Uses the Helm Datree plugin in OFFLINE mode -- no DATREE_TOKEN required.
+# Policies are defined in .github/policies.yaml (copy from ISB reference repos).
+#
+# This is a STANDALONE workflow -- separate from ci.yml.
+# Pattern confirmed from bcgov-c/tenant-gitops-* repos (e648d1, a56f0d, cc9b4e, etc.)
+#
+# Replace <APP_NAME> and <LICENSE> placeholders before enabling.
+
+name: "K8s Security Policy Check"
+
+on:
+  push:
+    branches: [main, test, develop]
+    tags: ['*']
+  pull_request:
+    branches: [main, test, develop]
+
+jobs:
+  policy-check:
+    runs-on: ubuntu-latest
+    env:
+      policy-directory: ./.github/workflows
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@v2
+
+      - uses: azure/setup-helm@v3
+        with:
+          version: 'latest '
+          token: ${{ secrets.GITHUB_TOKEN }}
+        id: install
+
+      - name: Policy Enforcement
+        run: |
+          helm plugin install https://github.com/datreeio/helm-datree
+          helm plugin update datree
+          helm datree config set offline local
+          if [[ "$GITHUB_REF" == "refs/heads/main" ]] || [[ "$GITHUB_REF" == refs/tags/* ]]; then
+            helm datree test --ignore-missing-schemas --policy-config ../policies.yaml \
+              --include-tests ../../charts/<APP_NAME> -- \
+              --namespace <LICENSE>-prod --values ../../deploy/prod_values.yaml <APP_NAME>-prod
+          elif [[ "$GITHUB_REF" == "refs/heads/test" ]]; then
+            helm datree test --ignore-missing-schemas --policy-config ../policies.yaml \
+              --include-tests ../../charts/<APP_NAME> -- \
+              --namespace <LICENSE>-test --values ../../deploy/test_values.yaml <APP_NAME>-test
+          else
+            helm datree test --ignore-missing-schemas --policy-config ../policies.yaml \
+              --include-tests ../../charts/<APP_NAME> -- \
+              --namespace <LICENSE>-dev --values ../../deploy/dev_values.yaml <APP_NAME>-dev
+          fi
+        working-directory: ${{env.policy-directory}}

@@ -69,27 +69,9 @@ jobs:
           --values deploy/prod_values.yaml
           > /dev/null
 
-      # -- Emerald Security Policy Enforcer (TO BE CONFIRMED) -----------------
-      # Datree is part of the ISB EA pattern but is implemented as a SEPARATE
-      # workflow (policy-enforcement.yaml) using the Helm Datree plugin in
-      # offline mode -- NOT via the datreeio/action-datree GitHub Action.
-      # The Helm plugin approach does NOT require a DATREE_TOKEN secret.
-      #
-      # Reference pattern from bcgov-c/tenant-gitops-e648d1:
-      #   helm plugin install https://github.com/datreeio/helm-datree
-      #   helm datree config set offline local
-      #   helm datree test --ignore-missing-schemas --policy-config .github/policies.yaml
-      #
-      # TODO: Confirm with ISB / team whether policy-enforcement.yaml is
-      # required for this project, then implement as a separate workflow file.
-      #
-      # - name: Emerald Security Policy Check (Datree)
-      #   uses: datreeio/action-datree@main        # <-- wrong approach; use Helm plugin instead
-      #   with:
-      #     path: 'charts/app'
-      #     cliArguments: '--only-k8s-files --policy-config .github/policies.yaml'
-      #     isHelmChart: true
-      #     helmArguments: '--values deploy/dev_values.yaml'
-      #   env:
-      #     DATREE_TOKEN: ${{ secrets.DATREE_TOKEN }}  # <-- not needed with offline Helm plugin
+      # -- Emerald Security Policy Enforcer ----------------------------------
+      # Datree runs as a STANDALONE workflow: .github/workflows/policy-enforcement.yaml
+      # It uses the Helm Datree plugin in offline mode -- no DATREE_TOKEN required.
+      # See policy-enforcement.yaml in this repo for the complete implementation.
+      # Reference: EmeraldDeploymentAnalysis.md section 7.2
 
