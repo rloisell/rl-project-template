@@ -112,6 +112,50 @@ Mark any large AI-generated block: `// AI-assisted: <what was generated>`
 
 ---
 
+## Deployment & Containerization (BC Gov Emerald OpenShift)
+
+When generating Containerfiles, Helm charts, GitHub Actions workflows, or OpenShift
+manifests for BC Gov projects, apply these standards:
+
+### Containerfiles (app)
+- Base images: `mcr.microsoft.com/dotnet/sdk:10.0` (build) → `aspnet:10.0` (runtime) for .NET API
+- Base images: `node:22-alpine` (build) → `nginx:alpine` (runtime) for React/Vite frontend
+- Expose **port 8080** — never 80, 443, or 5000/5005 in containers
+- Set `ENV ASPNETCORE_URLS=http://+:8080` on .NET containers
+- Always install curl (API) / wget (frontend) for health checks
+- Create a non-root user (`appuser`/`appgroup`); end with `USER appuser`
+- Drop all capabilities: `cap_drop: [ALL]`; add `security_opt: [no-new-privileges:true]`
+- Include `HEALTHCHECK` instructions pointing at `/health`
+
+### Frontend — VITE_API_URL
+- **Never** bake `VITE_API_URL` at build time from an environment variable
+- Serve a `/config.json` from Nginx that the app fetches on startup (`window.__env__`)
+- This allows one image to run in dev, test, and prod with different API URLs
+
+### Image registry
+- Push images to Artifactory: `artifacts.developer.gov.bc.ca/<project>/<image>:<git-sha>`
+- Never reference Docker Hub or GHCR for images that will run on Emerald
+
+### Helm charts (GitOps repo)
+- Always include `podLabels.DataClass: "Medium"` (or higher) for Emerald pods
+- Always include `route.annotations.aviinfrasetting.ako.vmware.com/name: "dataclass-medium"`
+- Use `storageClassName: netapp-file-standard` for PersistentVolumeClaims
+- Include `NetworkPolicy` objects — default-deny; explicitly allow ingress/egress per pod
+- Use `ClusterIP` services; expose via OpenShift `Route` with TLS edge termination
+- Resource requests and limits are required on every container
+
+### Secrets
+- Secrets are never committed — Helm templates provide the Secret object shape only
+- Real values live in Vault (`secret/<license>/<env>/<key>`)
+- Reference via `secretKeyRef` in pod env or Vault Agent sidecar injection
+
+### ArgoCD (deployment)
+- One ArgoCD `Application` CRD per environment (dev, test, prod)
+- `syncPolicy.automated.selfHeal: true` and `prune: true` on all environments
+- `targetRevision` maps to the env branch or tag (`develop`, `test`, `main`)
+
+---
+
 ## Git Commit Format
 ```
 <type>: <short imperative description>

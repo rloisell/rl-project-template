@@ -1,0 +1,56 @@
+# Containerfile.api
+# Ryan Loiselle — Developer / Architect
+# GitHub Copilot — AI pair programmer / code generation
+# February 2026
+#
+# AI-assisted: multistage .NET 10 containerization pattern for BC Gov Emerald OpenShift;
+# reviewed and directed by Ryan Loiselle.
+#
+# Replace <PROJECT_NAME> with the actual project name (e.g., DSC).
+# Exposes port 8080 — the standard port for all BC Gov OpenShift containers.
+# Runs as a non-root user to satisfy OpenShift security requirements.
+
+# ── BUILD STAGE ──────────────────────────────────────────────────────────────
+FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+WORKDIR /src
+
+# Restore dependencies first (layer cache optimisation)
+COPY src/<PROJECT_NAME>.Api/<PROJECT_NAME>.Api.csproj ./src/<PROJECT_NAME>.Api/
+RUN dotnet restore src/<PROJECT_NAME>.Api/<PROJECT_NAME>.Api.csproj
+
+# Copy everything else and publish
+COPY . .
+WORKDIR /src/src/<PROJECT_NAME>.Api
+RUN dotnet publish -c Release -o /app/publish
+
+# ── RUNTIME STAGE ────────────────────────────────────────────────────────────
+FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS runtime
+WORKDIR /app
+
+# Install curl for health checks (removed after to keep image lean)
+RUN apt-get update && apt-get install -y --no-install-recommends curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create non-root user — OpenShift assigns a random UID at runtime;
+# ownership of /app by group 0 ensures the random UID can read the files
+RUN groupadd -r appgroup && useradd -r -g appgroup appuser
+
+# Copy published application and set ownership
+COPY --from=build /app/publish .
+RUN chown -R appuser:appgroup /app
+
+# Drop to non-root
+USER appuser
+
+# Standard BC Gov OpenShift port
+EXPOSE 8080
+
+# Bind to all interfaces on port 8080 — do not use 5000/5005
+ENV ASPNETCORE_URLS=http://+:8080
+ENV ASPNETCORE_ENVIRONMENT=Production
+
+# Health check — /health must return HTTP 200 for liveness/readiness probes
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+  CMD curl -f http://localhost:8080/health || exit 1
+
+ENTRYPOINT ["dotnet", "<PROJECT_NAME>.Api.dll"]

@@ -268,3 +268,197 @@ All architecture and flow diagrams are maintained in two formats:
 - Passwords: ASP.NET Core `PasswordHasher` — never plain text or home-grown hashing
 - CORS: named policies — wildcard `DevCors` for local; explicit origin list `ProdCors` for production
 - `AI/securityNextSteps.md` documents the full hardening roadmap for every project
+
+---
+
+## 9. Deployment Standards (BC Gov Emerald OpenShift)
+
+All projects targeting the **BC Gov Private Cloud PaaS** follow the two-repo GitOps pattern
+described below. This pattern is mandated on the Emerald tier because the cluster API is
+SPANBC-internal only — GitHub Actions runners on the public internet cannot push to the cluster.
+
+### 9.1 Two-Repo Pattern
+
+| Repo | Contains | Who modifies it |
+|---|---|---|
+| **App repo** (e.g., `dsc-modernization`) | Source code, Containerfiles, build workflow | Developers |
+| **GitOps repo** (e.g., `dsc-gitops`) | Helm charts, ArgoCD Application CRDs, per-env values | CI (image tags) + Developers (everything else) |
+
+ArgoCD runs **inside** the cluster and watches the GitOps repo (pull model). It renders
+Helm templates and applies them to the target namespace automatically.
+
+### 9.2 Namespace Structure
+
+BC Gov Platform Registry provisions four namespaces per application:
+
+| Namespace | Purpose |
+|---|---|
+| `<license>-tools` | Build pipelines, Tekton, image building |
+| `<license>-dev` | Development environment |
+| `<license>-test` | Test / QA environment |
+| `<license>-prod` | Production environment |
+
+The license plate (e.g., `be808f`) is assigned at registration time via the
+[Platform Product Registry](https://digital.gov.bc.ca/technology/cloud/private/products-tools/registry/).
+
+### 9.3 Image Registry — Artifactory
+
+All images must be pushed to and pulled from **BC Gov Artifactory**
+(`artifacts.developer.gov.bc.ca`). On Emerald, pods can only reach the public internet
+through a proxy — Docker Hub and GHCR are not reliably reachable at runtime.
+
+Artifactory image path convention:
+```
+artifacts.developer.gov.bc.ca/<project>/<image-name>:<git-sha>
+```
+
+GitHub secrets needed in the app repo:
+- `ARTIFACTORY_USERNAME`
+- `ARTIFACTORY_PASSWORD`
+
+### 9.4 Containerfile Conventions
+
+| Rule | Detail |
+|---|---|
+| Port | Always `8080` — never 80, 443, 5000, or 5005 inside containers |
+| .NET base images | `mcr.microsoft.com/dotnet/sdk:10.0` (build) → `aspnet:10.0` (runtime) |
+| Frontend base images | `node:22-alpine` (build) → `nginx:alpine` (runtime) |
+| Non-root user | Create `appuser`/`appgroup`; end with `USER appuser` |
+| Drop capabilities | `cap_drop: [ALL]`; `security_opt: [no-new-privileges:true]` |
+| Health checks | `HEALTHCHECK` targeting `/health` (API) or `/` (frontend) |
+| Read-only OS | `read_only: true` in compose; mount `/tmp` as `tmpfs` |
+
+`ASPNETCORE_URLS` must be set to `http://+:8080` in all .NET runtime containers.
+
+### 9.5 Frontend — Runtime Configuration
+
+Vite bakes environment variables at **build time**. The API URL cannot be injected
+at container startup without rebuilding. The standard pattern:
+
+1. Nginx serves a `/config.json` file containing runtime values:
+   ```json
+   { "apiUrl": "https://<app>-api-<license>-dev.apps.emerald.devops.gov.bc.ca" }
+   ```
+2. The React app fetches `/config.json` on startup and stores in `window.__env__`
+3. A single image ships for all environments — the config file differs per namespace
+4. The config file is generated from a Helm `ConfigMap` using env-specific values
+
+### 9.6 Secrets Management — Vault
+
+Secrets live in **HashiCorp Vault** — never in the GitOps repo.
+
+Pattern:
+- Vault paths: `secret/<license>/<env>/<key>` (e.g., `secret/be808f/dev/db-password`)
+- Helm chart includes a `Secret` manifest as a **shape template only** — values are empty
+- At deploy time, Vault Agent Injector or External Secrets Operator populates the secret
+- GitHub Actions can read Vault for build-time secrets using the Vault GitHub Action
+
+Common secrets per project:
+- Database user + password
+- `ConnectionStrings__DefaultConnection`
+- Admin/API tokens
+- OIDC client credentials (if Keycloak integrated)
+
+### 9.7 Helm Chart Structure (GitOps repo)
+
+```
+gitops-repo/
+├── charts/
+│   └── <app>/
+│       ├── Chart.yaml
+│       ├── values.yaml             # defaults
+│       └── templates/
+│           ├── _helpers.tpl
+│           ├── deployment.yaml     # one per component (api, frontend, db)
+│           ├── service.yaml
+│           ├── route.yaml          # OpenShift Route with TLS edge termination
+│           ├── configmap.yaml      # includes frontend /config.json
+│           ├── secret.yaml         # shape only — Vault populates values
+│           ├── networkpolicies.yaml
+│           ├── hpa.yaml
+│           └── serviceaccount.yaml
+├── deploy/
+│   ├── dev_values.yaml
+│   ├── test_values.yaml
+│   └── prod_values.yaml
+└── applications/
+    └── argocd/
+        ├── app-dev.yaml
+        ├── app-test.yaml
+        └── app-prod.yaml
+```
+
+### 9.8 Required Pod Labels (Emerald)
+
+All pods on Emerald must carry data classification labels:
+
+```yaml
+podLabels:
+  DataClass: "Medium"           # or High / Critical — confirm with InfoSec
+
+route:
+  annotations:
+    aviinfrasetting.ako.vmware.com/name: "dataclass-medium"
+```
+
+### 9.9 Network Policies (required)
+
+Emerald enforces default-deny. Every inter-pod connection must be explicitly allowed:
+
+| Connection | Policy |
+|---|---|
+| OpenShift Router → Frontend | Allow ingress from `network.openshift.io/policy-group: ingress` |
+| OpenShift Router → API | Allow ingress from router namespace |
+| Frontend → API | Allow from frontend pod selector |
+| API → Database | Allow from API pod selector on port 3306/5432 |
+| All → DNS | Allow egress UDP/53 to DNS pods |
+| API → external (Vault, etc.) | Allow egress TCP/443 |
+
+### 9.10 ArgoCD Application CRD
+
+Each environment has its own `Application` CRD registered with ArgoCD:
+
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: <app>-dev
+spec:
+  destination:
+    namespace: <license>-dev
+    server: https://kubernetes.default.svc
+  source:
+    repoURL: git@github.com:<org>/<app>-gitops.git
+    targetRevision: develop
+    path: charts/<app>
+    helm:
+      valueFiles:
+        - $values/deploy/dev_values.yaml
+  project: <license>
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+```
+
+### 9.11 Platform Provisioning Checklist
+
+These steps require human action via BC Gov processes — they cannot be automated:
+
+- [ ] Register application in [Platform Product Registry](https://digital.gov.bc.ca/technology/cloud/private/products-tools/registry/) → get license plate
+- [ ] Request Artifactory project + Docker repository
+- [ ] Set up Artifactory service account; add credentials as GitHub Secrets
+- [ ] Onboard team to Vault; create secret paths for all environments
+- [ ] Enable ArgoCD for the project (self-serve or Platform request)
+- [ ] Register team members in OpenShift project (edit/admin roles)
+- [ ] Confirm `DataClass` classification with Information Security
+- [ ] Create GitOps repo; grant ArgoCD SSH deploy key read access
+- [ ] Register ArgoCD Application CRDs (apply `applications/argocd/*.yaml`)
+
+### 9.12 Reference Repos
+
+| Repo | What it demonstrates |
+|---|---|
+| [`bcgov-c/jag-network-tools`](https://github.com/bcgov-c/jag-network-tools) | .NET 10 + React/Vite app repo with Containerfiles and OpenShift manifests |
+| [`bcgov-c/tenant-gitops-be808f`](https://github.com/bcgov-c/tenant-gitops-be808f) | GitOps repo with Helm charts, ArgoCD CRDs, and per-env values (Emerald) |
+| [`bcgov/security-pipeline-templates`](https://github.com/bcgov/security-pipeline-templates) | BC Gov GitHub Actions and Tekton pipeline templates |

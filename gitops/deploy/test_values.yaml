@@ -1,0 +1,38 @@
+# deploy/test_values.yaml
+# Ryan Loiselle — Developer / Architect | GitHub Copilot | February 2026
+#
+# Test / QA environment overrides.
+# Replace <LICENSE> and <APP_NAME> with actual values.
+
+environment: test
+
+api:
+  replicaCount: 2
+  image:
+    tag: "latest"                 # CI updates this to the git SHA on each build
+  route:
+    host: <APP_NAME>-api-<LICENSE>-test.apps.emerald.devops.gov.bc.ca
+    annotations:
+      aviinfrasetting.ako.vmware.com/name: "dataclass-medium"
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+frontend:
+  replicaCount: 2
+  image:
+    tag: "latest"
+  route:
+    host: <APP_NAME>-<LICENSE>-test.apps.emerald.devops.gov.bc.ca
+    annotations:
+      aviinfrasetting.ako.vmware.com/name: "dataclass-medium"
+  config:
+    apiUrl: "https://<APP_NAME>-api-<LICENSE>-test.apps.emerald.devops.gov.bc.ca"
+
+db:
+  storage:
+    size: 5Gi

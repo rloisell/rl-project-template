@@ -1,0 +1,134 @@
+# networkpolicies.yaml
+# Ryan Loiselle — Developer / Architect | GitHub Copilot | February 2026
+#
+# Emerald enforces default-deny networking. Every permitted connection must be
+# explicitly declared. This file defines all required ingress/egress rules.
+# Review and adjust when adding external dependencies (Keycloak, Vault sidecar, etc.)
+
+# ── DENY ALL (baseline) ───────────────────────────────────────────────────────
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "<APP_NAME>.fullname" . }}-deny-all
+  labels:
+    {{- include "<APP_NAME>.labels" . | nindent 4 }}
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+
+---
+# ── ALLOW: OpenShift Router → Frontend ───────────────────────────────────────
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "<APP_NAME>.fullname" . }}-allow-router-to-frontend
+  labels:
+    {{- include "<APP_NAME>.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "<APP_NAME>.selectorLabels" . | nindent 6 }}
+      component: frontend
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              network.openshift.io/policy-group: ingress
+      ports:
+        - protocol: TCP
+          port: 8080
+
+---
+# ── ALLOW: OpenShift Router → API ────────────────────────────────────────────
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "<APP_NAME>.fullname" . }}-allow-router-to-api
+  labels:
+    {{- include "<APP_NAME>.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "<APP_NAME>.selectorLabels" . | nindent 6 }}
+      component: api
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              network.openshift.io/policy-group: ingress
+      ports:
+        - protocol: TCP
+          port: 8080
+
+---
+# ── ALLOW: API → Database ─────────────────────────────────────────────────────
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "<APP_NAME>.fullname" . }}-allow-api-to-db
+  labels:
+    {{- include "<APP_NAME>.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "<APP_NAME>.selectorLabels" . | nindent 6 }}
+      component: db
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              {{- include "<APP_NAME>.selectorLabels" . | nindent 14 }}
+              component: api
+      ports:
+        - protocol: TCP
+          port: 3306
+
+---
+# ── ALLOW: Egress DNS (ALL pods) ──────────────────────────────────────────────
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "<APP_NAME>.fullname" . }}-allow-egress-dns
+  labels:
+    {{- include "<APP_NAME>.labels" . | nindent 4 }}
+spec:
+  podSelector: {}
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - namespaceSelector: {}
+          podSelector:
+            matchLabels:
+              dns.operator.openshift.io/daemonset-dns: default
+      ports:
+        - protocol: UDP
+          port: 53
+
+---
+# ── ALLOW: Egress HTTPS (API → Vault, Keycloak, external) ────────────────────
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "<APP_NAME>.fullname" . }}-allow-api-egress-https
+  labels:
+    {{- include "<APP_NAME>.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "<APP_NAME>.selectorLabels" . | nindent 6 }}
+      component: api
+  policyTypes:
+    - Egress
+  egress:
+    - ports:
+        - protocol: TCP
+          port: 443

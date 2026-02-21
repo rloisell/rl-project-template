@@ -1,0 +1,86 @@
+# values.yaml — default values for <APP_NAME> Helm chart
+# Ryan Loiselle — Developer / Architect | GitHub Copilot | February 2026
+#
+# Override per-environment settings in deploy/dev_values.yaml etc.
+# Replace <LICENSE> and <APP_NAME> throughout.
+
+# ── GLOBAL ────────────────────────────────────────────────────────────────────
+environment: dev
+licencePlate: <LICENSE>
+
+# ── API ───────────────────────────────────────────────────────────────────────
+api:
+  replicaCount: 1
+  image:
+    repository: artifacts.developer.gov.bc.ca/<LICENSE>/<APP_NAME>-api
+    pullPolicy: Always
+    tag: "latest"
+  port: 8080
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  # DataClass label — confirm classification with InfoSec before deploying to Emerald
+  podLabels:
+    DataClass: "Medium"
+  route:
+    host: <APP_NAME>-api-<LICENSE>-dev.apps.emerald.devops.gov.bc.ca
+    annotations:
+      aviinfrasetting.ako.vmware.com/name: "dataclass-medium"
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 3
+    targetCPUUtilizationPercentage: 80
+
+# ── FRONTEND ──────────────────────────────────────────────────────────────────
+frontend:
+  replicaCount: 1
+  image:
+    repository: artifacts.developer.gov.bc.ca/<LICENSE>/<APP_NAME>-frontend
+    pullPolicy: Always
+    tag: "latest"
+  port: 8080
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 128Mi
+  podLabels:
+    DataClass: "Medium"
+  route:
+    host: <APP_NAME>-<LICENSE>-dev.apps.emerald.devops.gov.bc.ca
+    annotations:
+      aviinfrasetting.ako.vmware.com/name: "dataclass-medium"
+  # Runtime config — API URL injected at runtime via /config.json served by Nginx
+  config:
+    apiUrl: "https://<APP_NAME>-api-<LICENSE>-dev.apps.emerald.devops.gov.bc.ca"
+
+# ── DATABASE ──────────────────────────────────────────────────────────────────
+db:
+  replicaCount: 1
+  image:
+    repository: artifacts.developer.gov.bc.ca/<LICENSE>/mariadb
+    tag: "10.11"
+  port: 3306
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  storage:
+    size: 1Gi
+    storageClass: netapp-file-standard
+
+# ── SERVICE ACCOUNT ───────────────────────────────────────────────────────────
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""

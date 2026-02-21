@@ -1,0 +1,27 @@
+# hpa.yaml
+# Ryan Loiselle — Developer / Architect | GitHub Copilot | February 2026
+#
+# Horizontal Pod Autoscaler — only created if api.autoscaling.enabled = true.
+
+{{- if .Values.api.autoscaling.enabled }}
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "<APP_NAME>.fullname" . }}-api
+  labels:
+    {{- include "<APP_NAME>.labels" . | nindent 4 }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "<APP_NAME>.fullname" . }}-api
+  minReplicas: {{ .Values.api.autoscaling.minReplicas }}
+  maxReplicas: {{ .Values.api.autoscaling.maxReplicas }}
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.api.autoscaling.targetCPUUtilizationPercentage }}
+{{- end }}

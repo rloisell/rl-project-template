@@ -1,0 +1,33 @@
+# configmap.yaml
+# Ryan Loiselle — Developer / Architect | GitHub Copilot | February 2026
+#
+# ConfigMaps for API configuration and the frontend's runtime /config.json.
+# The frontend config allows a single container image to adapt its API URL
+# per environment at pod startup — see docs/deployment/STANDARDS.md Section 9.5.
+
+# ── FRONTEND RUNTIME CONFIG ───────────────────────────────────────────────────
+# Mounted at /usr/share/nginx/html/config.json inside the frontend container.
+# The React app fetches this on startup to get the API URL.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "<APP_NAME>.fullname" . }}-frontend-config
+  labels:
+    {{- include "<APP_NAME>.labels" . | nindent 4 }}
+data:
+  config.json: |
+    {
+      "apiUrl": {{ .Values.frontend.config.apiUrl | quote }}
+    }
+
+---
+# ── API CONFIGMAP ─────────────────────────────────────────────────────────────
+# Non-sensitive API configuration (sensitive values go in secrets.yaml via Vault)
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "<APP_NAME>.fullname" . }}-api-config
+  labels:
+    {{- include "<APP_NAME>.labels" . | nindent 4 }}
+data:
+  environment: {{ .Values.environment | quote }}

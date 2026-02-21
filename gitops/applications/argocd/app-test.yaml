@@ -1,0 +1,28 @@
+# applications/argocd/app-test.yaml
+# Ryan Loiselle — Developer / Architect | GitHub Copilot | February 2026
+#
+# ArgoCD Application CRD for the test environment.
+# Apply with: kubectl apply -f applications/argocd/app-test.yaml -n <LICENSE>-tools
+#
+# Replace <LICENSE>, <APP_NAME>, and <ORG> with actual values.
+
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: <APP_NAME>-test
+spec:
+  destination:
+    namespace: <LICENSE>-test
+    server: https://kubernetes.default.svc
+  source:
+    path: charts/app
+    repoURL: git@github.com:<ORG>/<APP_NAME>-gitops.git
+    targetRevision: test
+    helm:
+      valueFiles:
+        - $values/deploy/test_values.yaml
+  project: <LICENSE>
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

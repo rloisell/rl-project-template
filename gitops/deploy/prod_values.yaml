@@ -1,0 +1,51 @@
+# deploy/prod_values.yaml
+# Ryan Loiselle — Developer / Architect | GitHub Copilot | February 2026
+#
+# Production environment overrides.
+# Replace <LICENSE> and <APP_NAME> with actual values.
+# Prod deploys are promoted manually via PR to the GitOps repo main branch.
+
+environment: prod
+
+api:
+  replicaCount: 3
+  image:
+    tag: "latest"                 # Updated manually via PR — not by CI auto-commit
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 5
+    targetCPUUtilizationPercentage: 70
+  route:
+    host: <APP_NAME>-api-<LICENSE>-prod.apps.emerald.devops.gov.bc.ca
+    annotations:
+      aviinfrasetting.ako.vmware.com/name: "dataclass-medium"
+  resources:
+    requests:
+      cpu: 200m
+      memory: 512Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+
+frontend:
+  replicaCount: 3
+  image:
+    tag: "latest"                 # Updated manually via PR
+  route:
+    host: <APP_NAME>-<LICENSE>-prod.apps.emerald.devops.gov.bc.ca
+    annotations:
+      aviinfrasetting.ako.vmware.com/name: "dataclass-medium"
+  config:
+    apiUrl: "https://<APP_NAME>-api-<LICENSE>-prod.apps.emerald.devops.gov.bc.ca"
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 256Mi
+
+db:
+  storage:
+    size: 20Gi

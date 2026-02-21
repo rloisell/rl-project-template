@@ -1,0 +1,70 @@
+# .github/workflows/ci.yml
+# Ryan Loiselle — Developer / Architect | GitHub Copilot | February 2026
+#
+# GitOps repo CI — lints all Helm charts and validates template rendering
+# across all environments. Runs on every push and PR to tracked branches.
+# Does not build or push images — that lives in the app repo.
+
+name: CI — Helm Lint and Template
+
+on:
+  push:
+    branches: [main, develop, test]
+    paths:
+      - 'charts/**'
+      - 'deploy/**'
+  pull_request:
+    branches: [main, develop, test]
+
+permissions:
+  contents: read
+
+jobs:
+  helm-lint:
+    name: Lint and template Helm charts
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.14.4
+
+      # Lint the base chart with default values
+      - name: Lint chart (defaults)
+        run: helm lint charts/app
+
+      # Validate rendering for each environment — catches value substitution errors
+      - name: Lint chart (dev)
+        run: helm lint charts/app --values deploy/dev_values.yaml
+
+      - name: Lint chart (test)
+        run: helm lint charts/app --values deploy/test_values.yaml
+
+      - name: Lint chart (prod)
+        run: helm lint charts/app --values deploy/prod_values.yaml
+
+      # Template rendering validates all Go templates parse and render correctly
+      - name: Template chart (dev)
+        run: >
+          helm template app-dev charts/app
+          --namespace <LICENSE>-dev
+          --values deploy/dev_values.yaml
+          > /dev/null
+
+      - name: Template chart (test)
+        run: >
+          helm template app-test charts/app
+          --namespace <LICENSE>-test
+          --values deploy/test_values.yaml
+          > /dev/null
+
+      - name: Template chart (prod)
+        run: >
+          helm template app-prod charts/app
+          --namespace <LICENSE>-prod
+          --values deploy/prod_values.yaml
+          > /dev/null

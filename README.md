@@ -10,10 +10,14 @@ projects. Fork or clone this repo as the starting point for any new project.
 
 | File / Directory | Purpose |
 |---|---|
-| `.github/copilot-instructions.md` | **Automatically read by GitHub Copilot** in any repo that contains it. Defines coding style, comment conventions, and AI behaviour guardrails without any manual setup. |
+| `.github/copilot-instructions.md` | **Automatically read by GitHub Copilot** in any repo that contains it. Defines coding style, comment conventions, AI behaviour guardrails, and deployment conventions without any manual setup. |
 | `CODING_STANDARDS.md` | Human-readable reference document covering all the same rules in full detail. Share this with collaborators or paste into any AI tool as a system prompt. |
 | `docs/local-development/README.md` | Skeleton template for documenting local environment setup — ports, services, credentials, known issues. |
 | `docs/development-history.md` | Skeleton for recording session-by-session development notes (keeps the root README clean). |
+| `docs/deployment/STANDARDS.md` | Deployment architecture reference for BC Gov Emerald OpenShift — two-repo GitOps pattern, Artifactory, Vault, network policies. |
+| `containerization/` | Template Containerfiles (API + frontend), nginx.conf for SPA, and podman-compose.yml for local container testing. |
+| `.github/workflows/build-and-push.yml` | Skeleton GitHub Actions workflow to build images and push to Artifactory on commit. |
+| `gitops/` | Skeleton GitOps repo structure (Helm chart, ArgoCD Application CRDs, per-env values). Move into its own repo at project start. |
 
 ---
 
@@ -50,6 +54,10 @@ git commit -m "chore: initialise from rl-project-template"
 3. **Fill in `docs/local-development/README.md`** — add your actual ports, services, and setup steps.
 4. **Rename `docs/development-history.md`** — start adding session notes as you build.
 5. **Review `CODING_STANDARDS.md`** — adjust any project-specific technology choices at the top.
+6. **Update Containerfiles** — replace `<PROJECT_NAME>` placeholders in `containerization/` with your project name.
+7. **Move `gitops/`** — copy/move the `gitops/` skeleton into a new, separate repository and register it with ArgoCD.
+8. **Provision the platform** — follow the checklist in `docs/deployment/STANDARDS.md` Section 9.11 to register the project with BC Gov Platform Registry, Artifactory, and Vault before writing any pipeline code.
+9. **Add Artifactory credentials** as GitHub Secrets (`ARTIFACTORY_USERNAME`, `ARTIFACTORY_PASSWORD`) in the app repo settings.
 
 ---
 

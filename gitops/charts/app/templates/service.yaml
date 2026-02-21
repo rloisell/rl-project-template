@@ -1,0 +1,65 @@
+# service.yaml
+# Ryan Loiselle — Developer / Architect | GitHub Copilot | February 2026
+#
+# ClusterIP services for API and frontend.
+# Exposed externally via OpenShift Routes in route.yaml.
+
+# ── API SERVICE ───────────────────────────────────────────────────────────────
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "<APP_NAME>.fullname" . }}-api
+  labels:
+    {{- include "<APP_NAME>.labels" . | nindent 4 }}
+    component: api
+spec:
+  type: ClusterIP
+  ports:
+    - port: {{ .Values.api.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "<APP_NAME>.selectorLabels" . | nindent 4 }}
+    component: api
+
+---
+# ── FRONTEND SERVICE ──────────────────────────────────────────────────────────
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "<APP_NAME>.fullname" . }}-frontend
+  labels:
+    {{- include "<APP_NAME>.labels" . | nindent 4 }}
+    component: frontend
+spec:
+  type: ClusterIP
+  ports:
+    - port: {{ .Values.frontend.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "<APP_NAME>.selectorLabels" . | nindent 4 }}
+    component: frontend
+
+---
+# ── DATABASE SERVICE ──────────────────────────────────────────────────────────
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "<APP_NAME>.fullname" . }}-db
+  labels:
+    {{- include "<APP_NAME>.labels" . | nindent 4 }}
+    component: db
+spec:
+  type: ClusterIP
+  clusterIP: None     # Headless service for stable DNS in StatefulSet
+  ports:
+    - port: {{ .Values.db.port }}
+      targetPort: {{ .Values.db.port }}
+      protocol: TCP
+      name: mariadb
+  selector:
+    {{- include "<APP_NAME>.selectorLabels" . | nindent 4 }}
+    component: db

@@ -1,0 +1,53 @@
+# route.yaml
+# Ryan Loiselle — Developer / Architect | GitHub Copilot | February 2026
+#
+# OpenShift Routes with TLS edge termination.
+# The route host values and AVI annotations come from per-env values files.
+# insecureEdgeTerminationPolicy: Redirect forces HTTP → HTTPS.
+
+# ── FRONTEND ROUTE ────────────────────────────────────────────────────────────
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: {{ include "<APP_NAME>.fullname" . }}-frontend
+  labels:
+    {{- include "<APP_NAME>.labels" . | nindent 4 }}
+    component: frontend
+  annotations:
+    {{- with .Values.frontend.route.annotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  host: {{ .Values.frontend.route.host }}
+  to:
+    kind: Service
+    name: {{ include "<APP_NAME>.fullname" . }}-frontend
+  port:
+    targetPort: http
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
+
+---
+# ── API ROUTE ─────────────────────────────────────────────────────────────────
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: {{ include "<APP_NAME>.fullname" . }}-api
+  labels:
+    {{- include "<APP_NAME>.labels" . | nindent 4 }}
+    component: api
+  annotations:
+    {{- with .Values.api.route.annotations }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  host: {{ .Values.api.route.host }}
+  to:
+    kind: Service
+    name: {{ include "<APP_NAME>.fullname" . }}-api
+  port:
+    targetPort: http
+  tls:
+    termination: edge
+    insecureEdgeTerminationPolicy: Redirect
