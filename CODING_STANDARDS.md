@@ -291,24 +291,40 @@ Types: `feat`, `fix`, `docs`, `refactor`, `test`, `chore`
 
 ## 7. Diagrams
 
-All architecture and flow diagrams are maintained in two formats:
+All architecture and flow diagrams are maintained in the following formats:
 
 | Format | Use |
 |--------|-----|
-| Draw.io (`.drawio`) | Primary — editable source, exported to SVG for GitHub rendering |
-| PlantUML (`.puml`) | Secondary — text-based, exported to PNG |
+| Mermaid (inline `.md`) | Quick in-repo diagrams rendered natively by GitHub; stored in `docs/diagrams/` |
+| Draw.io (`.drawio`) | Primary editable source for complex diagrams, exported to SVG |
+| PlantUML (`.puml`) | Text-based UML alternative, exported to PNG |
 
 **Export conventions:**
 - Draw.io → SVG: `draw.io --export --format svg --embed-diagram --border 10`
 - PlantUML → PNG: `plantuml -o ../png *.puml`
 - SVG files use white background (`background="#ffffff"`) and strokeWidth=2 on edges
 
-**Required diagrams for a new project:**
-- Component diagram
-- Domain/data model
-- API architecture (middleware pipeline)
-- Deployment topology
-- Key sequence flows (one per major user-facing feature)
+**Required diagram set (full UML suite + data model):**
+
+Every project must produce the complete set below before a feature is considered
+production-ready. Diagrams marked _scales with features_ should have one instance
+per major use case or lifecycle, not one globally.
+
+| # | Diagram | UML Type | Perspective | Requirement |
+|---|---------|----------|-------------|-------------|
+| 1 | System architecture | Component | Structural | Required |
+| 2 | Domain class model | Class | Structural | Required |
+| 3 | Package / module organisation | Package | Structural | Required |
+| 4 | Use case overview | Use Case | Behavioural | Required |
+| 5 | Key sequence flows | Sequence | Behavioural | One per major user-facing feature |
+| 6 | Key workflows | Activity | Behavioural | One per complex multi-step workflow |
+| 7 | Entity lifecycle | State | Behavioural | For entities with non-trivial state transitions |
+| 8 | Entity-Relationship Diagram (ERD) | ERD | Data | Required |
+| 9 | Physical schema | Schema | Data | Required |
+| 10 | Deployment topology | Deployment | Infrastructure | Required |
+
+All diagrams live in `docs/diagrams/README.md` (Mermaid) or `diagrams/` (Draw.io/PlantUML).
+Each diagram file should carry the attribution header from Section 1.
 
 ---
 
