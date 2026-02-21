@@ -1,0 +1,78 @@
+# .github/workflows/build-and-test.yml
+#
+# CI workflow: build + unit-test on every push to develop and every PR to
+# main or develop.  Keeps the build green before anything reaches main.
+#
+# Placeholders to replace:
+#   <DOTNET_VERSION>   SDK version string (e.g., 10.x)
+#   <TEST_PROJECT>     Relative path to the test .csproj or solution
+#                      (e.g., tests/MyProject.Tests)
+#   <WEB_DIR>          Relative path to the frontend package.json directory
+#                      (e.g., src/MyProject.WebClient)
+#
+# Prerequisites:
+#   - Frontend must have a "test" script in package.json (e.g., vitest run).
+#     See CODING_STANDARDS.md §9.13 and EmeraldDeploymentAnalysis.md §8.2.
+
+name: Build and Test
+
+on:
+  push:
+    branches:
+      - develop
+  pull_request:
+    branches:
+      - main
+      - develop
+
+permissions:
+  contents: read
+
+jobs:
+
+  # ---------------------------------------------------------------------------
+  dotnet-test:
+    name: .NET Build & Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '<DOTNET_VERSION>'   # e.g., 10.x
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --no-restore
+
+      - name: Run tests
+        run: dotnet test --no-build --verbosity normal <TEST_PROJECT>
+
+  # ---------------------------------------------------------------------------
+  frontend-build:
+    name: Frontend Build & Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: '<WEB_DIR>/package-lock.json'
+
+      - name: Install dependencies
+        working-directory: '<WEB_DIR>'
+        run: npm ci
+
+      - name: Build
+        working-directory: '<WEB_DIR>'
+        run: npm run build
+
+      - name: Run tests
+        working-directory: '<WEB_DIR>'
+        run: npm test

@@ -1,0 +1,39 @@
+# .github/dependabot.yml
+#
+# Dependabot configuration — automated dependency update PRs.
+# Raises PRs when NuGet (.NET) or npm (frontend) packages have new versions
+# or security advisories.
+#
+# Placeholders to replace:
+#   /src/<API_DIR>   Path to the .csproj / .sln (e.g., /src/MyProject.Api)
+#   /src/<WEB_DIR>   Path to the frontend package.json dir (e.g., /src/MyProject.WebClient)
+#
+# GitHub Actions ecosystem is also included to keep workflow action versions
+# current (security best practice for supply-chain integrity).
+
+version: 2
+updates:
+
+  # .NET / NuGet
+  - package-ecosystem: nuget
+    directory: /src/<API_DIR>
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+
+  # Node / npm (frontend)
+  - package-ecosystem: npm
+    directory: /src/<WEB_DIR>
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+
+  # GitHub Actions
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
