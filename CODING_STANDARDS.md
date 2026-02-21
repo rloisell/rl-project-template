@@ -481,3 +481,59 @@ GitHub Copilot Code Review is enabled on this project. It auto-reviews every non
 - GitHub Copilot for Business or Enterprise enabled on the organization
 - `copilot-review.yml` workflow committed to the app repo (see `EmeraldDeploymentAnalysis.md` §8.3 for the full template)
 - Optionally enable the auto-reviewer toggle: Settings → Code review → GitHub Copilot
+
+---
+
+### 9.14 Source File Commentary Standard
+
+Every source file in the project must carry an **attribution header block** at the very top of the file (before any imports or namespace declarations). In addition, files containing non-trivial application logic must include **inline method or section comments**.
+
+#### Header Block (required on every source file)
+
+C# format:
+```csharp
+/*
+ * FileName.cs
+ * Ryan Loiselle — Developer / Architect
+ * GitHub Copilot — AI pair programmer / code generation
+ * February 2026
+ *
+ * [One sentence describing the file's purpose.]
+ * [Optional second sentence: delegation pattern, key design decision, etc.]
+ * AI-assisted: [specifically what Copilot generated]; reviewed and directed by Ryan Loiselle.
+ */
+```
+
+JavaScript / JSX format:
+```javascript
+/*
+ * FileName.jsx
+ * Ryan Loiselle — Developer / Architect
+ * GitHub Copilot — AI pair programmer / code generation
+ * February 2026
+ *
+ * [One sentence describing the component or module's purpose.]
+ * AI-assisted: [specifically what Copilot generated]; reviewed and directed by Ryan Loiselle.
+ */
+```
+
+#### Inline Method / Section Comments (conditional)
+
+Add method-level or section-level comments **only when the file contains application-specific logic or complexity**. Generic boilerplate does not need this level of detail.
+
+**Add method/section comments when the file:**
+- Is longer than ~80 lines **and** contains branching logic, business rules, or non-obvious data transformations
+- Contains LINQ / SQL queries with joins, grouping, or filtering
+- Has security-relevant logic (auth, hashing, token validation)
+- Is a composition root (`Program.cs`), a complex seeder, or a Swagger filter
+- Is a React page/hook with multi-step form state, cache invalidation, or derived state (`useMemo`)
+
+**Header only (no method comments) when the file is:**
+- A DTO, interface, or exception type
+- A simple pass-through CRUD controller (< ~80 lines, single entity, no branching)
+- A thin API service wrapper (repetitive GET/POST/PUT/DELETE with no transformation)
+- A presentational component with no business logic
+
+#### Rationale
+
+Attribution headers ensure that AI-assisted contributions are visible in code review, audits, and onboarding. Method-level comments are reserved for files where the logic is genuinely non-obvious — adding them to generic CRUD code adds noise without value.
