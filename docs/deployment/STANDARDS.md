@@ -57,14 +57,17 @@ Every GitOps repo must run Datree in CI against Helm-rendered manifests before
 code can merge to `main`. This validates that all workloads carry the correct ISB
 labels (DataClass, environment, owner) and meet security baseline requirements.
 
-**Implementation:**
-- Add `datreeio/action-datree@main` step at the end of `.github/workflows/ci.yml`
-- Create `.github/policies.yaml` with ISB-provided policy identifiers
-- Add `DATREE_TOKEN` as a GitHub Actions Secret in the **GitOps repo** (not the app repo)
-- Obtain `DATREE_TOKEN` from the ISB / Emerald platform team
+**Correct implementation (Helm plugin, offline mode — no token required):**
+- Create `.github/workflows/policy-enforcement.yaml` as a **standalone workflow file**
+  (not a step inside `ci.yml`)
+- Install the Datree Helm plugin and set offline mode: `helm datree config set offline local`
+- Use `.github/policies.yaml` for policy identifiers (copy from another `tenant-gitops-*` repo)
+- **No `DATREE_TOKEN` is required** — offline mode does not authenticate to the Datree cloud
+- See `EmeraldDeploymentAnalysis.md` §7.2 for the complete `policy-enforcement.yaml` template
 
-**The CI step will block all PRs until `DATREE_TOKEN` is set.** Request this token
-from ISB during project provisioning.
+> **Incorrect pattern to avoid:** Using `datreeio/action-datree@main` as a step inside
+> `ci.yml` with a `DATREE_TOKEN` secret does not match any active ISB tenant-gitops repo and
+> should not be used.
 
 ### 2. Production Deployment via PR (Not Direct Commit)
 
@@ -101,7 +104,6 @@ git SHA. Git SHAs are acceptable for dev/test environments.
   - `ARTIFACTORY_USERNAME`
   - `ARTIFACTORY_PASSWORD`
 - [ ] Create `GITOPS_TOKEN` (GitHub PAT with `repo` write scope on the GitOps repo); store as GitHub Secret in the **app repo**
-- [ ] **Contact ISB / Emerald platform team to obtain `DATREE_TOKEN`**; store as GitHub Secret in the **GitOps repo**
 - [ ] Onboard to Vault; provision paths: `secret/<license>/<env>/<secret-name>`
 - [ ] Enable ArgoCD for the project
 - [ ] Add team members to OpenShift namespaces (edit/admin roles)
@@ -123,7 +125,8 @@ git SHA. Git SHAs are acceptable for dev/test environments.
 - [ ] Name the new repo `<app-name>-gitops` (e.g., `dsc-gitops`)
 - [ ] Replace all `<APP_NAME>` and `<LICENSE>` placeholders throughout
 - [ ] Populate `deploy/dev_values.yaml`, `deploy/test_values.yaml`, `deploy/prod_values.yaml`
-- [ ] Add `DATREE_TOKEN` as a GitHub Actions Secret (obtained from ISB in Step 1)
+- [ ] Copy `.github/policies.yaml` from ISB or another `tenant-gitops-*` repo
+- [ ] Create `.github/workflows/policy-enforcement.yaml` (Datree Helm plugin offline — see `EmeraldDeploymentAnalysis.md` §7.2)
 - [ ] Grant ArgoCD SSH deploy key read access to the GitOps repo
 - [ ] Apply ArgoCD Application CRDs: `kubectl apply -f applications/argocd/`
 
@@ -160,8 +163,8 @@ git SHA. Git SHAs are acceptable for dev/test environments.
 | Per-env values | GitOps repo | `deploy/*.yaml` |
 | ArgoCD CRDs | GitOps repo | `applications/argocd/*.yaml` |
 | Helm lint + Datree CI | GitOps repo | `.github/workflows/ci.yml` |
+| Datree policy enforcement | GitOps repo | `.github/workflows/policy-enforcement.yaml` |
 | Datree policy config | GitOps repo | `.github/policies.yaml` |
-| Secret: `DATREE_TOKEN` | **GitOps repo** (GitHub Secrets) | Settings -> Secrets -> Actions |
 
 ---
 
@@ -181,4 +184,6 @@ git SHA. Git SHAs are acceptable for dev/test environments.
 | Security Pipeline Templates | https://github.com/bcgov/security-pipeline-templates |
 | Reference App Repo | https://github.com/bcgov-c/jag-network-tools |
 | Reference GitOps Repo | https://github.com/bcgov-c/tenant-gitops-be808f |
+| Peer CI/CD Pattern (CORNET) | https://github.com/bcgov-c/JAG-JAM-CORNET |
+| Peer CI/CD Pattern (LEA) | https://github.com/bcgov-c/JAG-LEA |
 | Datree Helm action | https://github.com/datreeio/helm-datree |

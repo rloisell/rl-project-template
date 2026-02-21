@@ -148,6 +148,12 @@ count++;
 - Ports, services, credentials (dev only), LaunchAgent / Docker setup
 - Known issues and workarounds
 
+### docs/deployment/
+- `STANDARDS.md` — deployment checklist for BC Gov Emerald (GitOps pattern, Artifactory, Vault)
+- `EmeraldDeploymentAnalysis.md` — canonical platform reference (ISB EA Option 2, Datree, CI/CD patterns)
+- `DEPLOYMENT_ANALYSIS.md` (project-specific) — how the project aligns with platform requirements
+- `DEPLOYMENT_NEXT_STEPS.md` (project-specific) — ordered list of remaining deployment actions
+
 ### AI/ directory (optional)
 - `WORKLOG.md` — detailed, chronological build log
 - `nextSteps.md` — feature backlog and completion status
@@ -461,4 +467,6 @@ These steps require human action via BC Gov processes — they cannot be automat
 |---|---|
 | [`bcgov-c/jag-network-tools`](https://github.com/bcgov-c/jag-network-tools) | .NET 10 + React/Vite app repo with Containerfiles and OpenShift manifests |
 | [`bcgov-c/tenant-gitops-be808f`](https://github.com/bcgov-c/tenant-gitops-be808f) | GitOps repo with Helm charts, ArgoCD CRDs, and per-env values (Emerald) |
+| [`bcgov-c/JAG-JAM-CORNET`](https://github.com/bcgov-c/JAG-JAM-CORNET) | Peer ISB project — Trivy scans + build-and-test.yml pattern |
+| [`bcgov-c/JAG-LEA`](https://github.com/bcgov-c/JAG-LEA) | Peer ISB project — CI/CD pipeline reference |
 | [`bcgov/security-pipeline-templates`](https://github.com/bcgov/security-pipeline-templates) | BC Gov GitHub Actions and Tekton pipeline templates |

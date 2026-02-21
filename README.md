@@ -15,6 +15,7 @@ projects. Fork or clone this repo as the starting point for any new project.
 | `docs/local-development/README.md` | Skeleton template for documenting local environment setup — ports, services, credentials, known issues. |
 | `docs/development-history.md` | Skeleton for recording session-by-session development notes (keeps the root README clean). |
 | `docs/deployment/STANDARDS.md` | Deployment architecture reference for BC Gov Emerald OpenShift — two-repo GitOps pattern, Artifactory, Vault, network policies. |
+| `docs/deployment/EmeraldDeploymentAnalysis.md` | Full platform guide — ISB EA Option 2 compliance, Datree implementation, CI/CD patterns, new project setup checklist. Canonical copy maintained here. |
 | `containerization/` | Template Containerfiles (API + frontend), nginx.conf for SPA, and podman-compose.yml for local container testing. |
 | `.github/workflows/build-and-push.yml` | Skeleton GitHub Actions workflow to build images and push to Artifactory on commit. |
 | `gitops/` | Skeleton GitOps repo structure (Helm chart, ArgoCD Application CRDs, per-env values). Move into its own repo at project start. |
