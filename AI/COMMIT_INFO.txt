@@ -19,8 +19,9 @@ Format per entry:
 - branch protection set on main via GitHub API
 
 ## Session D — 2026-02-22 (spec-kitty guidance — Section 11)
-- commit: <see merge below> — branch: docs/spec-kitty-guidance
-- PR: docs/spec-kitty-guidance → main
+- commit: 9e02f13 — branch: docs/spec-kitty-guidance
+- PR #6: docs/spec-kitty-guidance → main — squash-merged --admin
+- merge commit: f9162bc — main
 - CODING_STANDARDS.md: Section 11 added (spec-kitty workflow §11.1-§11.7)
 - .github/copilot-instructions.md: spec-kitty workflow block added
 
