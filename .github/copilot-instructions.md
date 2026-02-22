@@ -203,6 +203,60 @@ Prepend at the **top** of Session History:
 
 ---
 
+## spec-kitty Feature Development Workflow
+
+All features follow a spec-first process using spec-kitty before any implementation code is written.
+
+### Feature Directory Structure
+```
+kitty-specs/{NNN}-{slug}/
+  spec.md        # requirements, user stories, success criteria
+  plan.md        # phased implementation plan
+  tasks/         # WP task files (WP01-title.md, WP02-title.md, ...)
+  spec/fixtures/openapi/   # OpenAPI request/response example .json files
+  spec/fixtures/db/        # SQL migration preview .sql files
+```
+
+### WP File Frontmatter (required fields)
+```yaml
+---
+work_package_id: "WP01"
+title: "Short description"
+lane: "planned"
+subtasks: ["WP01"]
+phase: "Phase 1 — Name"
+assignee: ""
+agent: ""
+history:
+  - timestamp: "YYYY-MM-DDTHH:MM:SSZ"
+    lane: "planned"
+    agent: "system"
+    action: "Created for feature spec"
+---
+```
+
+### Initialization (new project)
+```bash
+spec-kitty init --here --ai copilot --non-interactive --no-git --force
+spec-kitty agent feature create-feature --id 001 --name "feature-slug"
+spec-kitty validate-tasks --all   # must show 0 mismatches before any code
+```
+
+### ALWAYS (spec-kitty)
+- Write `spec.md` + `plan.md` + WP files **before** any implementation code
+- Run `spec-kitty validate-tasks --all` after writing WP files; fix all mismatches
+- Include OpenAPI fixtures for every new API endpoint
+- Note in spec files: use `List<string>` for LINQ collection variables in EF Core (not `new[]`)
+- Commit `.kittify/` and `kitty-specs/` to the repo; add `__pycache__/` to `.gitignore`
+- Set `lane: "planned"` on all new WPs; advance lane as work progresses
+
+### NEVER (spec-kitty)
+- Start implementation code before the spec and WPs exist
+- Leave WP files with inconsistent lane values without running validate-tasks
+- Commit `__pycache__/` or `.pyc` files from spec-kitty scripts
+
+---
+
 ## Git Commit Format
 ```
 <type>: <short imperative description>

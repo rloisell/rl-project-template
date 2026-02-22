@@ -6,3 +6,9 @@ AI/CHANGES.csv,modified,session C tracking rows
 AI/COMMANDS.sh,modified,session C commands
 AI/WORKLOG.md,modified,session C entry prepended
 AI/COMMIT_INFO.txt,modified,session C commit record
+CODING_STANDARDS.md,modified,added Section 11 — spec-kitty Feature Development Workflow (§11.1-§11.7)
+.github/copilot-instructions.md,modified,added spec-kitty workflow block between doc maintenance and Git Commit Format sections
+AI/WORKLOG.md,modified,session D entry prepended
+AI/CHANGES.csv,modified,session D tracking rows
+AI/COMMANDS.sh,modified,session D commands
+AI/COMMIT_INFO.txt,modified,session D commit record

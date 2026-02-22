@@ -19,3 +19,14 @@
 # git commit -m "docs: add doc maintenance standard, nextSteps.md template; add branch protection"
 # git push origin docs/doc-maintenance-standard
 # gh pr create + merge
+
+
+# ── Session D — 2026-02-22 ───────────────────────────────────────────────────
+# Add spec-kitty guidance (Section 11 + copilot-instructions.md spec-kitty block)
+# git checkout main && git pull
+# git checkout -b docs/spec-kitty-guidance
+# (edited CODING_STANDARDS.md Section 11, .github/copilot-instructions.md)
+# git add CODING_STANDARDS.md .github/copilot-instructions.md AI/WORKLOG.md AI/CHANGES.csv AI/COMMANDS.sh AI/COMMIT_INFO.txt
+# git commit -m "docs: add spec-kitty feature development workflow guidance (Section 11)"
+# git push origin docs/spec-kitty-guidance
+# gh pr create + merge
