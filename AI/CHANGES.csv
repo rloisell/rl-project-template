@@ -1,1 +1,8 @@
 path,action,notes
+AI/nextSteps.md,created,new file — nextSteps.md template following new doc maintenance standard
+CODING_STANDARDS.md,modified,added Section 10 — AI/nextSteps.md Maintenance Standard
+.github/copilot-instructions.md,modified,added doc maintenance guardrails block before Git Commit Format section
+AI/CHANGES.csv,modified,session C tracking rows
+AI/COMMANDS.sh,modified,session C commands
+AI/WORKLOG.md,modified,session C entry prepended
+AI/COMMIT_INFO.txt,modified,session C commit record
