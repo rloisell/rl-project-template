@@ -15,5 +15,5 @@ Format per entry:
 ## Session C — 2026-02-22 (doc maintenance standard + branch protection)
 - commit: <see merge below> — branch: docs/doc-maintenance-standard
 - PR: docs/doc-maintenance-standard → main
-- merge commit: <TBD — updated after merge>
+- merge commit: 465e160 — main
 - branch protection set on main via GitHub API
