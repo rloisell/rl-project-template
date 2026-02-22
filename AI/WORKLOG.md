@@ -6,6 +6,29 @@
 
 ---
 
+## 2026-02-22 — Session D: spec-kitty Guidance (Section 11 + copilot-instructions.md)
+
+**Objective**: Add spec-kitty feature development workflow guidance to the template so all future projects follow spec-first development using spec-kitty.
+
+### Actions taken
+- Added `CODING_STANDARDS.md` Section 11 — spec-kitty Feature Development Workflow (§11.1–§11.7)
+  - Overview of spec-first process
+  - Directory structure (`kitty-specs/{NNN}-{slug}/`)
+  - Setup commands (`spec-kitty init`, `agent feature create-feature`)
+  - WP task file YAML frontmatter format
+  - `spec.md` required sections
+  - Validation (`spec-kitty validate-tasks --all`)
+  - AI guardrails (ALWAYS/NEVER)
+- Added spec-kitty workflow block to `.github/copilot-instructions.md` (between doc maintenance and Git Commit Format sections)
+- Committed to branch `docs/spec-kitty-guidance`, pushed, PR merged to main
+
+### Key Decisions
+- Section 11 codifies the spec-kitty process established in DSC-modernization Session D
+- copilot-instructions.md block keeps key workflow reminders live for AI pair programming sessions
+- EF Core `List<string>` / LINQ gotcha explicitly documented in spec template guidance
+
+---
+
 ## 2026-02-22 — Session C: Document Maintenance Standard
 
 **Objective**: Apply the `AI/nextSteps.md` document maintenance standard (Section 10) established in DSC-modernization to this template repo; add branch protection to `main`.

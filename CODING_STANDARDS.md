@@ -680,4 +680,154 @@ Prepend each new entry at the **top** of the Session History section.
 - Delete old session history entries — they form the audit trail
 - Move session history to a separate file without explicit user direction
 - Restructure the document ordering without explicit user direction
+
+---
+
+## Section 11 — spec-kitty Feature Development Workflow
+
+**spec-kitty** is the spec-driven development process used in all projects. Every feature begins with a spec and a set of work packages (WPs) before any implementation starts. This section defines the required structure and workflow.
+
+### 11.1 Overview
+
+Before writing a single line of implementation code, every planned feature must have:
+1. A `spec.md` (feature specification with user stories, requirements, success criteria)
+2. A `plan.md` (phased implementation plan)
+3. Work package (WP) files — one per implementation phase/deliverable
+
+Features are stored in `kitty-specs/{NNN}-{feature-slug}/` where `NNN` is a zero-padded sequence number.
+
+### 11.2 Directory Structure
+
+```
+kitty-specs/
+  001-first-feature/
+    spec.md              # feature spec (requirements, user stories, success criteria)
+    plan.md              # phased implementation plan
+    tasks/               # WP task files (one per work package)
+      WP01-title.md
+      WP02-title.md
+    checklists/          # acceptance checklists (optional)
+    research/            # research notes (optional)
+    spec/
+      fixtures/
+        openapi/         # OpenAPI request/response examples (.json)
+        db/              # SQL migration previews (.sql)
+```
+
+### 11.3 Setting Up spec-kitty in a New Project
+
+```bash
+# Install spec-kitty globally
+pip install spec-kitty
+
+# Initialize in project root (selects GitHub Copilot as agent)
+spec-kitty init --here --ai copilot --non-interactive --no-git --force
+
+# Create a feature
+spec-kitty agent feature create-feature --id 001 --name "my-feature-name"
+```
+
+After `init`, commit the `.kittify/` directory and the updated `.github/prompts/` files.
+
+### 11.4 WP Task File Format
+
+Every work package file uses YAML frontmatter:
+
+```yaml
+---
+work_package_id: "WP01"
+title: "Short description of this work package"
+lane: "planned"
+subtasks:
+  - "WP01"   # list dependencies here (usually self to start)
+phase: "Phase 1 — Name"
+assignee: ""
+agent: ""
+shell_pid: ""
+review_status: ""
+reviewed_by: ""
+history:
+  - timestamp: "YYYY-MM-DDTHH:MM:SSZ"
+    lane: "planned"
+    agent: "system"
+    action: "Created for feature spec"
+---
+
+## Work Package: WP01 — Title
+
+### Goal
+What does this WP deliver?
+
+### Deliverables
+- [ ] Specific file or code change
+- [ ] Test covering this change
+
+### Acceptance Criteria
+- [ ] Criterion 1
+- [ ] Criterion 2
+
+### Notes
+Any implementation notes or constraints.
+```
+
+**Lane values:** `planned` → `in-progress` → `review` → `done`
+
+### 11.5 `spec.md` Required Sections
+
+```markdown
+# Feature NNN — Feature Name
+
+## Overview
+One paragraph describing the feature and its purpose.
+
+## User Stories
+- As a [role], I want to [action] so that [benefit].
+
+## Requirements
+### Functional Requirements
+- REQ-01: ...
+
+### Non-Functional Requirements
+- NFR-01: ...
+
+## Success Criteria
+- [ ] Criterion 1
+- [ ] Criterion 2
+
+## Out of Scope
+- What this feature deliberately does NOT include
+
+## Dependencies
+- Other features or WPs this depends on
+
+## Notes
+- Implementation guidance, edge cases, EF Core gotchas, etc.
+```
+
+### 11.6 Validation and CI
+
+After writing all WP files, always validate:
+
+```bash
+spec-kitty validate-tasks --all
+# Expected: 0 mismatches across all features
+```
+
+Add this check to your CI workflow if spec-kitty is installed in the pipeline.
+
+### 11.7 AI Guardrails for spec-kitty
+
+**ALWAYS:**
+- Initialize spec-kitty and write spec/plan/WPs **before** any implementation code
+- Run `spec-kitty validate-tasks --all` after writing WP files
+- Include OpenAPI fixtures for any new API endpoints
+- Include the EF Core note in specs that use LINQ: use `List<string>` for collection variables (not `new[]`) to avoid `ReadOnlySpan<string>.Contains()` overload conflict on .NET Linux
+- Set `lane: "planned"` on all new WP files; update lane as work progresses
+- Commit `.kittify/` and `kitty-specs/` to the repository
+
+**NEVER:**
+- Skip the spec phase and start coding directly
+- Leave WP files with inconsistent lane values (run validate-tasks)
+- Commit `__pycache__/` or `.pyc` files from spec-kitty scripts
+
 - Allow the document to grow past ~600 lines — condense history to key facts; details live in `AI/WORKLOG.md`
