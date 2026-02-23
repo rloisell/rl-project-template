@@ -8,6 +8,23 @@ For the full human-readable version of these standards, see `CODING_STANDARDS.md
 
 ---
 
+## Session Startup Protocol
+
+**At the start of every session, read the following files before responding to anything.**
+Ryan does not paste these in manually — they are your standing briefing documents.
+
+| Order | File | Why |
+|-------|------|-----|
+| 1 | `AI/nextSteps.md` | Primary orientation — MASTER TODO, what is in progress |
+| 2 | `CODING_STANDARDS.md` | Full coding conventions, deployment standards (§9), AI guardrails |
+| 3 | `docs/deployment/EmeraldDeploymentAnalysis.md` | Canonical Emerald platform reference — Artifactory approval flow, ISB EA Option 2, CI/CD patterns |
+| 4 | `docs/deployment/STANDARDS.md` | Concise new-project deployment checklist |
+
+After reading, open with a one-sentence summary of the current state from `AI/nextSteps.md`,
+then proceed with the user's request.
+
+---
+
 ## Identity & Attribution
 
 - **Developer / Architect**: Ryan Loiselle — makes all structural and business-logic decisions
@@ -145,8 +162,14 @@ manifests for BC Gov projects, apply these standards:
 - This allows one image to run in dev, test, and prod with different API URLs
 
 ### Image registry
-- Push images to Artifactory: `artifacts.developer.gov.bc.ca/<project>/<image>:<git-sha>`
+- Push images to Artifactory: `artifacts.developer.gov.bc.ca/<key>-docker-local/<image>:<git-sha>`
 - Never reference Docker Hub or GHCR for images that will run on Emerald
+- **Artifactory projects are not self-serve.** Before pushing: (1) apply `ArtifactoryProject` CRD
+  in `<license>-tools`, (2) post in `#devops-artifactory` on Rocket.Chat for approval,
+  (3) wait for `approval_status: nothing-to-approve`, (4) create `docker-local` repo in UI,
+  (5) add `default-<license>-<sa-hash>` service account as Developer in UI.
+  The pipeline logs in to Artifactory as step 1 — it fails immediately at login if steps 4–5
+  are not complete.
 
 ### Helm charts (GitOps repo)
 - Always include `podLabels.DataClass: "Medium"` (or higher) for Emerald pods

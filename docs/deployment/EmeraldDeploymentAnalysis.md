@@ -557,14 +557,31 @@ pre-launch checklist for any new Emerald project:
 ### Platform Provisioning (human steps)
 
 - [ ] Register in [Platform Product Registry](https://digital.gov.bc.ca/technology/cloud/private/products-tools/registry/) — receive license plate
-- [ ] Request Artifactory project + Docker repository (`<license>-docker-local`)
-- [ ] Create Artifactory service account; store as GitHub Secrets (`ARTIFACTORY_USERNAME`, `ARTIFACTORY_PASSWORD`) in app repo
-- [ ] Create `GITOPS_TOKEN` (GitHub PAT with `repo` write scope on gitops repo); store as GitHub Secret in app repo
+- [ ] Apply `ArtifactoryProject` CRD in `<license>-tools` to register the Artifactory project
+  ```bash
+  oc apply -f artifactory-project.yaml -n <license>-tools
+  # Check status:
+  oc describe artproj <name> -n <license>-tools | grep approval_status
+  ```
+- [ ] Post in `#devops-artifactory` on Rocket.Chat requesting approval (include license plate and project key)
+- [ ] Wait for Platform Services approval (`approval_status: nothing-to-approve`)
+- [ ] Artifactory UI → project dropdown → gear icon → Repositories → Add Local → Docker
+  → name `docker-local` (auto-prefixed to `<key>-docker-local`); enable Xray → Save
+- [ ] Artifactory UI → Identity and Access → Members → search `<license>` → select
+  `default-<license>-<sa-hash>` → role: **Developer** → Save
+- [ ] Store Artifactory service account credentials as GitHub Secrets in app repo:
+  `ARTIFACTORY_USERNAME` + `ARTIFACTORY_PASSWORD`
+- [ ] Create `GITOPS_TOKEN` (fine-grained GitHub PAT with `repo` write scope on gitops repo); store as GitHub Secret in app repo
 - [ ] Onboard to Vault; provision paths: `secret/<license>/<env>/<key>`
 - [ ] Enable ArgoCD for the project (self-serve or platform team request)
 - [ ] Add team members to OpenShift namespaces (edit/admin roles)
 - [ ] Confirm `DataClass` label value with Information Security
 - [ ] Enable branch protection on `main` in the gitops repo (require PR review)
+
+> ⚠️ **Pipeline ordering:** `build-and-push.yml` logs in to Artifactory as its **first step**.
+> Pushing to trigger the pipeline before the Artifactory UI steps are complete (Docker local
+> repo created + service account added as Developer) will fail immediately at login —
+> not at the build step. Complete all Artifactory UI steps before pushing.
 
 ### GitOps Repo Setup
 

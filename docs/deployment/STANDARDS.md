@@ -99,16 +99,26 @@ git SHA. Git SHAs are acceptable for dev/test environments.
 ### Step 1 -- Platform Provisioning (human steps)
 
 - [ ] Register in [Platform Product Registry](https://digital.gov.bc.ca/technology/cloud/private/products-tools/registry/) -- receive license plate
-- [ ] Request Artifactory project + Docker repository (`<license>-docker-local`)
-- [ ] Create Artifactory service account; store credentials as GitHub Secrets in the **app repo**:
+- [ ] Apply `ArtifactoryProject` CRD in `<license>-tools` to register the Artifactory project
+- [ ] Post in `#devops-artifactory` on Rocket.Chat requesting approval (license plate + project key)
+- [ ] Wait for Platform Services approval
+  (`oc describe artproj <name> -n <license>-tools | grep approval_status` → `nothing-to-approve`)
+- [ ] Artifactory UI -- create `docker-local` repo inside the approved project (auto-named `<key>-docker-local`)
+- [ ] Artifactory UI -- add `default-<license>-<sa-hash>` service account as **Developer** on the repo
+- [ ] Store Artifactory credentials as GitHub Secrets in the **app repo**:
   - `ARTIFACTORY_USERNAME`
   - `ARTIFACTORY_PASSWORD`
-- [ ] Create `GITOPS_TOKEN` (GitHub PAT with `repo` write scope on the GitOps repo); store as GitHub Secret in the **app repo**
+- [ ] Create `GITOPS_TOKEN` (fine-grained GitHub PAT with `repo` write scope on the GitOps repo); store as GitHub Secret in the **app repo**
 - [ ] Onboard to Vault; provision paths: `secret/<license>/<env>/<secret-name>`
 - [ ] Enable ArgoCD for the project
 - [ ] Add team members to OpenShift namespaces (edit/admin roles)
 - [ ] Confirm `DataClass` label value with Information Security
 - [ ] Enable branch protection on `main` in the GitOps repo (require PR review)
+
+> ⚠️ **Pipeline ordering:** `build-and-push.yml` logs in to Artifactory as its **first step**.
+> Pushing to trigger the pipeline before the Docker local repo is created and the service
+> account is added as Developer will fail immediately at login. Complete steps 4--6 above
+> before pushing.
 
 ### Step 2 -- App Repo (this repo)
 
