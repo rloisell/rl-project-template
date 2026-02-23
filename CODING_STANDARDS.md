@@ -502,6 +502,12 @@ route:
     aviinfrasetting.ako.vmware.com/name: "dataclass-medium"
 ```
 
+> ⚠️ **`dataclass-low` has NO registered VIP on Emerald (observed 2026-02-23).**
+> Using it produces a DNS timeout — the route resolves but no VIP is present.
+> **Use `dataclass-medium` for all internal workloads.** The pod `DataClass` label
+> MUST match the annotation suffix exactly — the SDN silently drops traffic on mismatch.
+> AKO re-adds the annotation within ~15s; always include it in Helm values.
+
 ### 9.9 Network Policies (required)
 
 Emerald enforces default-deny. Every inter-pod connection must be explicitly allowed:

@@ -73,12 +73,24 @@ InfraSetting routing annotations:
 
 ```yaml
 podLabels:
-  DataClass: "Low"   # or Medium / High / Critical
+  DataClass: "<classification>"   # Low / Medium / High / Critical — confirm with InfoSec
 
 route:
   annotations:
-    aviinfrasetting.ako.vmware.com/name: "dataclass-low"
+    aviinfrasetting.ako.vmware.com/name: "dataclass-<classification>"
 ```
+
+> ⚠️ **CRITICAL — `dataclass-low` has NO registered VIP on Emerald (observed 2026-02-23).**
+> Routes using `aviinfrasetting.ako.vmware.com/name: "dataclass-low"` produce a DNS
+> timeout when accessed over VPN — the route resolves but the VIP is absent.
+> Symptom: browser shows `ERR_EMPTY_RESPONSE` or TLS `close_notify`.
+> **Use `dataclass-medium` for all internal workloads.**
+>
+> Additionally, the SDN enforces that the **pod `DataClass` label matches the annotation suffix**.
+> `DataClass: "Medium"` + `dataclass-medium` = ✅ traffic flows.
+> Any mismatch = the SDN silently drops packets — no error in pod logs.
+> AKO (the AVI controller) re-adds the annotation within ~15s if removed — always keep
+> it in Helm values to avoid ArgoCD drift.
 
 ---
 
@@ -632,10 +644,99 @@ pre-launch checklist for any new Emerald project:
 | Route returns 503 | Pod readiness probe failing | `oc logs <pod>` — DB likely not healthy yet |
 | DB PVC in `Pending` | Storage class name wrong or unavailable | `oc get sc` — confirm `netapp-file-standard` exists |
 | Datree CI step failing | Helm chart fails policy check | Read Datree output — most common: missing `DataClass` label |
+| Route accessible but `ERR_EMPTY_RESPONSE` / TLS `close_notify` | Pod `DataClass` label does not match `aviinfrasetting` annotation suffix | Set both pod label and annotation to the same class — e.g. `DataClass: "Medium"` + `dataclass-medium` |
+| Route DNS times out on VPN (even when pod is green) | `dataclass-low` annotation — no VIP registered on Emerald (observed 2026-02-23) | Switch to `dataclass-medium`; `dataclass-low` has no registered VIP on Emerald |
+| `appsettings.Development.json` values not applied in pod | `ASPNETCORE_ENVIRONMENT` is `Dev`, not `Development` in Emerald pods | Move all config to `appsettings.json` or explicit pod env vars; never depend on `appsettings.Development.json` in container deployments |
+| Controller endpoints return 401 despite correct auth policy | Named policy does not call `.AddAuthenticationSchemes()` — default scheme does not auto-apply for named policies | Add `.AddAuthenticationSchemes("SchemeName")` to every `.AddPolicy()` call |
+| EF Core migrations fail with `Table already exists` on fresh deploy | A migration duplicates objects already created by an earlier legacy mega-migration | Make the conflicting migration a no-op: remove duplicate `CreateTable`/`AddColumn` calls, keep only net-new operations |
 
 ---
 
-## 16. Reference URLs
+## 16. Application Deployment Patterns
+
+These patterns were validated deploying a .NET 10 API against Emerald (DSC Modernization,
+2026-02-23) and apply to any similar stack on the platform.
+
+### 16.1 — `ASPNETCORE_ENVIRONMENT` in OpenShift Pods
+
+Emerald pods receive `ASPNETCORE_ENVIRONMENT=Dev` (not `Development`). As a result,
+`appsettings.Development.json` is **never loaded** in OpenShift. All environment-specific
+configuration must be:
+- Placed in `appsettings.json` (applies to all environments), or
+- Injected as explicit environment variables from a Kubernetes Secret via Helm
+
+Never rely on `appsettings.Development.json` for settings that must work in a deployed pod.
+
+### 16.2 — ASP.NET Core: Two Named Auth Policies
+
+When an application requires both "any authenticated user" routes and a separate
+"static admin token" route, use two named policies:
+
+```csharp
+// Program.cs
+builder.Services.AddAuthorization(options =>
+{
+    // Policy for regular users (e.g. CRUD controllers)
+    options.AddPolicy("UserAccess", policy =>
+        policy.AddAuthenticationSchemes("UserId")        // ← required
+              .RequireAuthenticatedUser());
+
+    // Policy for admin-only endpoints (bootstrap / seed)
+    options.AddPolicy("AdminOnly", policy =>
+        policy.AddAuthenticationSchemes("AdminToken")    // ← required
+              .RequireAuthenticatedUser());
+});
+```
+
+> **Critical:** `.AddAuthenticationSchemes("SchemeName")` is **required** on every named
+> policy. Without it, the default authentication scheme runs instead of the intended one,
+> and all requests return 401. This is because ASP.NET Core does not auto-apply the
+> default scheme to additional named policies.
+
+### 16.3 — EF Core Migrations with a Legacy Mega-Migration
+
+If an initial migration creates the full schema (e.g. a reverse-engineered legacy DB),
+all subsequent migrations that overlap with it must be made no-op for already-existing
+objects:
+
+**Symptom:** Migration runner fails with `Table 'name' already exists`, then aborts —
+blocking all migrations that follow.
+
+**Fix:** In each conflicting migration's `Up()` method, remove the duplicate
+`CreateTable` / `AddColumn` / `CreateIndex` / `AddForeignKey` calls. Keep only the
+net-new operations that the mega-migration did not include.
+
+```csharp
+// Migration generated by scaffold that duplicates existing objects — BEFORE fix:
+migrationBuilder.CreateTable("projects", ...);   // already exists from MapJavaModel
+migrationBuilder.AddColumn<decimal>("estimated_hours", ...);  // net-new ← KEEP
+
+// AFTER fix — remove the CreateTable, keep only what is actually new:
+migrationBuilder.AddColumn<decimal>("estimated_hours", "project_assignments", ...);
+```
+
+> EF Core migration runner **aborts on the first failure** — one conflict blocks all
+> subsequent migrations. Fix and test conflicts one at a time using
+> `dotnet ef database update <MigrationName>`.
+
+### 16.4 — Seed / Bootstrap Endpoints
+
+If the application provides a data-seeding endpoint (e.g. `POST /api/admin/seed`),
+it must be called manually after every fresh deployment or database reset. It is not
+invoked automatically by ArgoCD or pod startup.
+
+Add a post-deployment step to the first-deployment checklist:
+```bash
+curl -X POST https://<api-route>/api/admin/seed/test-data \
+  -H "X-Admin-Token: <ADMIN_TOKEN>"
+```
+
+Protect seed endpoints with a static token scheme (`AdminOnly` policy above), not with
+the standard user auth scheme — the DB is empty before seeding, so user lookup fails.
+
+---
+
+## 17. Reference URLs
 
 | Resource | URL |
 |---|---|

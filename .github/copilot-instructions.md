@@ -172,10 +172,17 @@ manifests for BC Gov projects, apply these standards:
   are not complete.
 
 ### Helm charts (GitOps repo)
-- Always include `podLabels.DataClass: "Medium"` (or higher) for Emerald pods
-- Always include `route.annotations.aviinfrasetting.ako.vmware.com/name: "dataclass-medium"`
+- Always include `podLabels.DataClass: "Medium"` (or higher) for Emerald pods — confirm value with InfoSec
+- **AVI InfraSettings — route annotation:**
+  - `aviinfrasetting.ako.vmware.com/name: "dataclass-medium"` → private VIP (VPN-accessible); correct for all internal workloads
+  - `aviinfrasetting.ako.vmware.com/name: "dataclass-low"` → ⚠️ **DO NOT USE** — no registered VIP on Emerald; DNS times out on VPN (observed Feb 2026)
+  - AKO re-adds this annotation within ~15s if removed — always keep it in Helm values
+- **Pod `DataClass` label MUST match the route annotation suffix** (SDN enforces at the VIP layer):
+  - `DataClass: Medium` + `dataclass-medium` → ✅ traffic flows
+  - Mismatch → SDN silently drops traffic (`ERR_EMPTY_RESPONSE`)
 - Use `storageClassName: netapp-file-standard` for PersistentVolumeClaims
-- Include `NetworkPolicy` objects — default-deny; explicitly allow ingress/egress per pod
+- Include `NetworkPolicy` objects — Emerald default-deny blocks both Ingress **and** Egress
+  - Every traffic flow requires **two** policies: Ingress on the receiver AND Egress on the sender
 - Use `ClusterIP` services; expose via OpenShift `Route` with TLS edge termination
 - Resource requests and limits are required on every container
 
