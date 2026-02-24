@@ -25,3 +25,11 @@ Format per entry:
 - CODING_STANDARDS.md: Section 11 added (spec-kitty workflow §11.1-§11.7)
 - .github/copilot-instructions.md: spec-kitty workflow block added
 
+
+── Session G — 2026-02-23 ──────────────────────────────────────────────────────
+- Branch: fix/codeql-paths-filter-v4 → main
+- Commit: 325f064 (squash → merge commit 12a9e04)
+- Message: fix: silence CodeQL failures on template repo
+- .github/workflows/codeql.yml: paths filters added, schedule removed, codeql-action v3→v4
+- PR #8: fix/codeql-paths-filter-v4 → main — squash-merged --admin
+- Dependabot PR #7 (codeql-action 3→4) now redundant — should be closed
