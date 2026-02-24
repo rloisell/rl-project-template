@@ -12,3 +12,8 @@ AI/WORKLOG.md,modified,session D entry prepended
 AI/CHANGES.csv,modified,session D tracking rows
 AI/COMMANDS.sh,modified,session D commands
 AI/COMMIT_INFO.txt,modified,session D commit record
+.github/workflows/codeql.yml,modified,added paths filter (src/** **.cs **.js **.ts **.jsx **.tsx); removed schedule cron; upgraded codeql-action v3→v4; added TEMPLATE NOTE block
+AI/WORKLOG.md,modified,added session G entry (CodeQL fix); backfilled sessions E and F
+AI/CHANGES.csv,modified,session G tracking rows
+AI/COMMANDS.sh,modified,session G commands
+AI/COMMIT_INFO.txt,modified,session G commit record
