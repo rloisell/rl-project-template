@@ -1,8 +1,20 @@
 # .github/workflows/codeql.yml
 #
 # GitHub CodeQL Static Application Security Testing (SAST).
-# Scans C# and JavaScript/TypeScript for security vulnerabilities on every
-# push/PR to main or develop, and weekly on Monday morning.
+# Scans C# and JavaScript/TypeScript for security vulnerabilities on push/PR
+# to main or develop — ONLY when actual source files change.
+#
+# ── TEMPLATE NOTE ─────────────────────────────────────────────────────────────
+# This is a skeleton workflow. It will only trigger when source files under
+# src/ or matching common code extensions are changed. In a fresh project from
+# this template (documentation-only), the workflow will be skipped harmlessly.
+#
+# When your project has real source code, this workflow requires no changes —
+# the paths filters will automatically enable it once src/ is populated.
+#
+# If you add additional source languages, extend the matrix.language list and
+# add matching paths patterns below.
+# ──────────────────────────────────────────────────────────────────────────────
 #
 # Requires: GitHub Advanced Security (GHAS) — available in bcgov-c private org.
 # Results appear in: Security → Code scanning tab.
@@ -14,12 +26,24 @@ on:
     branches:
       - main
       - develop
+    paths:
+      - 'src/**'
+      - '**.cs'
+      - '**.js'
+      - '**.ts'
+      - '**.jsx'
+      - '**.tsx'
   pull_request:
     branches:
       - main
       - develop
-  schedule:
-    - cron: '0 6 * * 1'   # Weekly — Monday 06:00 UTC
+    paths:
+      - 'src/**'
+      - '**.cs'
+      - '**.js'
+      - '**.ts'
+      - '**.jsx'
+      - '**.tsx'
 
 permissions:
   actions:         read
@@ -42,14 +66,14 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v3
+        uses: github/codeql-action/init@v4
         with:
           languages: ${{ matrix.language }}
 
       - name: Autobuild
-        uses: github/codeql-action/autobuild@v3
+        uses: github/codeql-action/autobuild@v4
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v3
+        uses: github/codeql-action/analyze@v4
         with:
           category: '/language:${{ matrix.language }}'

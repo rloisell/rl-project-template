@@ -6,6 +6,68 @@
 
 ---
 
+## 2026-02-23 — Session G: Fix CodeQL workflow — paths filter + v4 upgrade
+
+**Objective**: Diagnose and fix 20/20 CodeQL failures on rl-project-template; update to codeql-action v4.
+
+### Actions taken
+- Investigated run #20 logs — confirmed two failure causes:
+  1. C# `autobuild` failure: no `.csproj`/`.sln` in template repo → "Could not auto-detect a suitable build method"
+  2. JS/TS failure: no source `.js`/`.ts` files → "CodeQL detected GitHub Actions YAML but not JavaScript/TypeScript"
+- Fixed `.github/workflows/codeql.yml`:
+  - Added `paths` filters to push/PR triggers (`src/**`, `**.cs`, `**.js`, `**.ts`, `**.jsx`, `**.tsx`) — workflow skips on documentation-only pushes
+  - Removed `schedule:` cron trigger — meaningless for a template repo with no source code
+  - Upgraded `github/codeql-action` from `@v3` → `@v4` (addresses deprecation warning; also closes Dependabot PR #7)
+  - Added prominent TEMPLATE NOTE block explaining the skeleton behaviour
+
+### Files created or modified
+- `.github/workflows/codeql.yml` — paths filter, removed schedule, v3→v4 upgrade, template note added
+
+### Commits
+- _(pending — branch `fix/codeql-paths-filter-v4`)_
+
+### Outcomes / Notes
+- After this fix, CodeQL will only fire in projects that have actual source code — no more false failures in the template repo itself
+- DSC-modernization's `codeql.yml` also uses `@v3`; Dependabot PR already exists to bump it (Tier 4 in `AI/nextSteps.md`)
+
+---
+
+## 2026-02-23 — Session F: Dependabot PR Check Protocol
+
+**Objective**: Add Dependabot PR check to session startup protocol in `copilot-instructions.md`.
+
+### Actions taken
+- Added "Dependabot PR Check" step to session startup table in `.github/copilot-instructions.md`
+- Committed directly to `main` as `31d0ecb`
+
+### Files created or modified
+- `.github/copilot-instructions.md` — Dependabot check step added to startup protocol
+
+### Commits
+- `31d0ecb` — docs: add Dependabot PR check to session startup protocol
+
+---
+
+## 2026-02-23 — Session E: Emerald Deployment Learnings
+
+**Objective**: Port all Emerald deployment learnings from DSC-modernization to the template.
+
+### Actions taken
+- Updated `docs/deployment/EmeraldDeploymentAnalysis.md` with DataClass/AVI label learnings, troubleshooting rows, and §16 Key Learnings
+- Updated `docs/deployment/DEPLOYMENT_NEXT_STEPS.md`
+- Updated `.github/copilot-instructions.md` with Emerald deployment context block
+- Committed as `041d555`
+
+### Files created or modified
+- `docs/deployment/EmeraldDeploymentAnalysis.md` — §16 learnings, troubleshooting table
+- `docs/deployment/DEPLOYMENT_NEXT_STEPS.md` — completion markers
+- `.github/copilot-instructions.md` — Emerald context block
+
+### Commits
+- `041d555` — docs: add Emerald deployment learnings from DSC project (2026-02-23)
+
+---
+
 ## 2026-02-22 — Session D: spec-kitty Guidance (Section 11 + copilot-instructions.md)
 
 **Objective**: Add spec-kitty feature development workflow guidance to the template so all future projects follow spec-first development using spec-kitty.

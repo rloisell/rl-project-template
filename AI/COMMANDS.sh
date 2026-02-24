@@ -30,3 +30,13 @@
 # git commit -m "docs: add spec-kitty feature development workflow guidance (Section 11)"
 # git push origin docs/spec-kitty-guidance
 # gh pr create + merge
+
+
+# ── Session G — 2026-02-23 ───────────────────────────────────────────────────
+# Fix CodeQL workflow — paths filter + codeql-action v3→v4
+# (edited .github/workflows/codeql.yml)
+# git checkout -b fix/codeql-paths-filter-v4
+# git add .github/workflows/codeql.yml AI/WORKLOG.md AI/CHANGES.csv AI/COMMANDS.sh AI/COMMIT_INFO.txt
+# git commit -m "fix: silence CodeQL failures on template repo (paths filter, remove schedule, v3→v4)"
+# git push origin fix/codeql-paths-filter-v4
+# gh pr create + merge
