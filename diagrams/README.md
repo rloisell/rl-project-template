@@ -59,3 +59,10 @@ plantuml -o ../png diagrams/plantuml/*.puml
 
 SVG files should use `background="#ffffff"` and `strokeWidth=2` on edges for
 consistent GitHub rendering. Set these via Draw.io: Edit → XML → adjust attributes.
+
+---
+
+## VS Code Extensions
+
+- [Draw.io Integration](https://marketplace.visualstudio.com/items?itemName=hediet.vscode-drawio) — edit `.drawio` files in VS Code
+- [PlantUML](https://marketplace.visualstudio.com/items?itemName=jebbs.plantuml) — preview `.puml` files with Alt+D
