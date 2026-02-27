@@ -23,16 +23,21 @@ to export to SVG/PNG for inclusion in documentation.
 
 ## Tool Selection Guide
 
-| Use draw.io when... | Use PlantUML when... |
-|---------------------|----------------------|
-| Architecture diagrams with boxes/flows | Sequence diagrams (UML) |
-| Infrastructure topology | Class diagrams |
-| Network diagrams | State machine diagrams |
-| C4 Container/Context diagrams | Activity flows with branching |
-| Free-form whiteboard diagrams | Code-generated diagrams |
+| Use draw.io when... | Use PlantUML when... | Use Mermaid when... |
+|---------------------|----------------------|---------------------|
+| Architecture diagrams with boxes/flows | Sequence diagrams (UML) | Quick inline docs |
+| Infrastructure topology | Class diagrams | GitHub README diagrams |
+| Network diagrams | State machine / activity | Flowcharts in markdown |
+| C4 Container/Context diagrams | Package diagrams | No tool install needed |
+| Free-form whiteboard diagrams | Code-generated diagrams | Rendered natively by GitHub |
 
-Both formats can produce SVG and PNG exports. SVG is preferred for documentation
-(scalable) and PNG for embedding in markdown where SVG is not supported.
+**Three formats supported:**
+- **draw.io** (`.drawio`) — primary source for complex structural diagrams; exported to SVG
+- **PlantUML** (`.puml`) — text-based UML; exported to PNG
+- **Mermaid** (inline in `.md`) — lightweight, rendered natively by GitHub; use for quick diagrams in `docs/`
+
+SVG is preferred over PNG for documentation (resolution-independent). Export both when the
+diagram will be embedded in markdown that is viewed both in GitHub and in VS Code.
 
 ---
 
@@ -54,27 +59,38 @@ diagrams/
       <diagram-name>.svg           ← exported ER diagram SVG
     png/
       <diagram-name>.png           ← exported ER diagram PNG
+
+docs/diagrams/
+  README.md                        ← Mermaid diagrams (inline in markdown)
 ```
 
 Export files (SVG/PNG) are committed so documentation renders without tooling.
 Source files (`.drawio`, `.puml`) are committed for editability.
+Mermaid diagrams live inline in `docs/diagrams/README.md` — no export step needed.
 
 ---
 
 ## Required Diagrams (every project)
 
-| # | Diagram | Format | Location |
-|---|---------|--------|----------|
-| 1 | Solution Architecture | draw.io | `drawio/solution-architecture.drawio` |
-| 2 | Data Model / Entity Relationship | draw.io | `data-model/data-model.drawio` |
-| 3 | Deployment Architecture (OpenShift) | draw.io | `drawio/deployment-architecture.drawio` |
-| 4 | Network Policy / Traffic Flows | draw.io | `drawio/network-policy.drawio` |
-| 5 | Container / Service Interaction | draw.io or PlantUML | `drawio/container-diagram.drawio` |
-| 6 | API Request / Response Flow | PlantUML (sequence) | `plantuml/api-sequence.puml` |
-| 7 | Authentication Flow | PlantUML (sequence) | `plantuml/auth-flow.puml` |
-| 8 | CI/CD Pipeline | draw.io | `drawio/cicd-pipeline.drawio` |
+This set matches CODING_STANDARDS.md §7. All 10 are required before a feature is
+consider production-ready. Diagrams marked *scales with features* need one per
+major use case, not one globally.
 
-Add project-specific diagrams as needed. Never delete the 8 base diagrams.
+| # | Diagram | UML Type | Format | Location |
+|---|---------|----------|--------|----------|
+| 1 | System Architecture | Component | draw.io | `drawio/system-architecture.drawio` |
+| 2 | Domain Class Model | Class | PlantUML | `plantuml/class-model.puml` |
+| 3 | Package / Module Organisation | Package | PlantUML | `plantuml/package-structure.puml` |
+| 4 | Use Case Overview | Use Case | PlantUML | `plantuml/use-cases.puml` |
+| 5 | Key Sequence Flows *(scales with features)* | Sequence | PlantUML | `plantuml/<feature>-sequence.puml` |
+| 6 | Key Workflows *(scales with features)* | Activity | PlantUML | `plantuml/<feature>-workflow.puml` |
+| 7 | Entity Lifecycle *(for non-trivial state)* | State | PlantUML | `plantuml/<entity>-state.puml` |
+| 8 | Entity-Relationship Diagram (ERD) | ERD | draw.io | `data-model/erd.drawio` |
+| 9 | Physical Database Schema | Schema | draw.io | `data-model/physical-schema.drawio` |
+| 10 | Deployment Topology (OpenShift) | Deployment | draw.io | `drawio/deployment-topology.drawio` |
+
+Additional project-specific diagrams (network policy, CI/CD pipeline, auth flow)
+should be added as needed. Never remove the 10 base diagrams.
 
 ---
 
@@ -89,7 +105,7 @@ code --install-extension hediet.vscode-drawio
 # PlantUML preview and generation
 code --install-extension jebbs.plantuml
 
-# Optional: Mermaid for markdown-embedded diagrams
+# Mermaid diagram preview in markdown
 code --install-extension bierner.markdown-mermaid
 ```
 
@@ -112,13 +128,16 @@ code --install-extension bierner.markdown-mermaid
 # Install draw.io CLI (macOS)
 brew install --cask drawio
 
-# Export a single file to SVG
-drawio --export --format svg --output diagrams/drawio/svg/<name>.svg diagrams/drawio/<name>.drawio
+# Export a single file to SVG (white background, strokeWidth=2 on edges)
+drawio --export --format svg \
+  --embed-diagram --border 10 \
+  --output diagrams/drawio/svg/<name>.svg diagrams/drawio/<name>.drawio
 
 # Export all draw.io files in a directory to SVG
 find diagrams/drawio -name "*.drawio" -not -path "*/svg/*" | while read f; do
   name=$(basename "$f" .drawio)
-  drawio --export --format svg --output "diagrams/drawio/svg/${name}.svg" "$f"
+  drawio --export --format svg --embed-diagram --border 10 \
+    --output "diagrams/drawio/svg/${name}.svg" "$f"
 done
 ```
 
@@ -131,10 +150,15 @@ brew install plantuml
 plantuml -tpng -o diagrams/plantuml/png diagrams/plantuml/<name>.puml
 
 # Export all .puml files
-find diagrams/plantuml -name "*.puml" | while read f; do
+find diagrams/plantuml -maxdepth 1 -name "*.puml" | while read f; do
   plantuml -tpng -o ../png "$f"
 done
 ```
+
+### Mermaid — no export needed
+Mermaid diagrams are written inline in markdown and rendered natively by GitHub.
+For VS Code preview, the `bierner.markdown-mermaid` extension renders them
+in the built-in Markdown Preview panel.
 
 ---
 
@@ -169,6 +193,40 @@ FE --> User: confirmation
 @enduml
 ```
 
+### Class Diagram
+```plantuml
+@startuml <diagram-name>
+title Domain Class Model — <Project>
+
+class <Entity> {
+  +Guid Id
+  +string Name
+  +DateTime CreatedAt
+}
+
+class <RelatedEntity> {
+  +Guid Id
+  +Guid <Entity>Id
+}
+
+<Entity> "1" --o "*" <RelatedEntity> : contains
+@enduml
+```
+
+### State Diagram
+```plantuml
+@startuml <diagram-name>
+title <Entity> Lifecycle
+
+[*] --> Pending
+Pending --> Active : approved
+Active --> Suspended : suspend()
+Suspended --> Active : reinstate()
+Active --> Closed : close()
+Closed --> [*]
+@enduml
+```
+
 ### C4 Container Diagram (PlantUML C4 library)
 ```plantuml
 @startuml <diagram-name>
@@ -187,6 +245,33 @@ Rel(user, frontend, "Uses", "HTTPS")
 Rel(frontend, api, "API calls", "JSON/HTTPS")
 Rel(api, db, "Reads/Writes", "SQL")
 @enduml
+```
+
+### Mermaid (inline markdown)
+```markdown
+```mermaid
+graph LR
+  User -->|HTTPS| Frontend
+  Frontend -->|REST| API
+  API -->|SQL| Database
+` `` 
+```
+
+For complex Mermaid diagrams (flowcharts, ER diagrams, sequence):
+```markdown
+```mermaid
+erDiagram
+  ENTITY {
+    UUID id PK
+    string name
+    datetime created_at
+  }
+  RELATED {
+    UUID id PK
+    UUID entity_id FK
+  }
+  ENTITY ||--o{ RELATED : "contains"
+` ``
 ```
 
 ---

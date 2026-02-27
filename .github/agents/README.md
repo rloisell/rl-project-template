@@ -28,9 +28,13 @@ agents encode hard-won operational knowledge permanently.
 
 | File | Skill Name | Scope |
 |------|-----------|-------|
-| `session-workflow.agent.md` | Session Workflow Advisor | Session startup/shutdown discipline, AI file maintenance |
+| `session-workflow.agent.md` | Session Workflow Advisor | Session startup/shutdown, AI file maintenance (WORKLOG/CHANGES/COMMANDS/COMMIT_INFO) |
 | `github-workflow.agent.md` | GitHub Workflow Advisor | Branch naming, PR lifecycle, CI diagnosis, gh CLI, rulesets |
-| `diagram-generation.agent.md` | Diagram Generation Advisor | draw.io + PlantUML creation, folder structure, export commands |
+| `diagram-generation.agent.md` | Diagram Generation Advisor | draw.io + PlantUML + Mermaid, 10-diagram UML suite, folder structure, export commands |
+| `ci-cd-pipeline.agent.md` | CI/CD Pipeline Advisor | 5-workflow files, ISB EA Option 2 GitOps pattern, image tagging, yq updates, Trivy, placeholder substitution |
+| `local-dev.agent.md` | Local Development Advisor | podman-compose, EF Core migration commands, MariaDB setup, port conventions, env config, troubleshooting |
+| `spec-kitty.agent.md` | Spec-Kitty Advisor | Spec-first development, WP YAML format, spec.md/plan.md required sections, validate-tasks, Linux LINQ gotcha |
+| `ef-core.agent.md` | EF Core Advisor | Pomelo/MariaDB patterns, migration workflow, startup Migrate(), primary constructors, Linux LINQ overload, service layer |
 | `bc-gov-devops.agent.md` | BC Gov DevOps Advisor | OpenShift Emerald, Artifactory, Helm, NetworkPolicy, ArgoCD |
 
 Project-specific agents (e.g. `network-policy.agent.md`, `openshift-health.agent.md`)
@@ -44,10 +48,9 @@ live in the project's own `.github/agents/` folder and extend these generic ones
 After several development sessions across HelloNetworkWorld and DSC-modernization,
 two patterns emerged:
 
-1. **Re-discovery cost** — The same Emerald-specific facts (AVI InfraSettings,
-   dataclass-low having no VIP, Artifactory approval steps, two-way NetworkPolicy
-   rules) were being re-explained or re-discovered every other session. Each
-   re-discovery consumes context, time, and risks introducing regressions.
+1. **Re-discovery cost** — The same platform facts, CLI patterns, and workflow steps
+   were being re-explained every other session. Each re-discovery consumes context,
+   time, and risks introducing regressions.
 
 2. **Session state loss** — AI has no memory between sessions. Without a structured
    startup protocol, sessions often began with outdated context or missed in-progress
@@ -55,47 +58,51 @@ two patterns emerged:
 
 ### Resolution
 
-Each agent was created to permanently encode a specific domain of knowledge so
-it never has to be re-explained:
+Each agent was created to permanently encode a specific domain of knowledge:
 
 #### `session-workflow.agent.md`
-**Gap addressed**: No formal protocol for session start and end.  
-Sessions were inconsistently starting without reading orientation files, and ending
-without committing AI session logs. The result was orphaned changes on local disk
-and `AI/nextSteps.md` falling out of date.  
-**Decision**: Encode the startup checklist (read nextSteps.md → git status → Dependabot
-check) and shutdown protocol (WORKLOG/CHANGES/COMMANDS/COMMIT_INFO → commit → push)
-as an always-available agent skill. The agent acts as a session conductor.
+No formal protocol for session start and end. Sessions were starting without reading
+orientation files and ending without committing AI session logs. Encodes the startup
+checklist and shutdown protocol as an always-available conductor.
 
 #### `github-workflow.agent.md`
-**Gap addressed**: Branch protection rules and CI failure diagnosis required
-re-learning each time.  
-Two specific incidents drove this: (1) a ruleset status check name mismatch between
-the workflow `name:` field and the ruleset context string caused phantom CI failures;
-(2) making a repo public was required before rulesets enforced — this is non-obvious.  
-**Decision**: Encode the complete PR lifecycle (branch → commit → PR → CI watch →
-squash merge), the `gh` CLI patterns, and a CI failure diagnosis table so these
-patterns are always available without re-research.
+Branch protection rules and CI failure diagnosis required re-learning each time.
+Two incidents drove this: a ruleset status check name mismatch, and the non-obvious
+requirement to make a repo public before rulesets enforce on free GitHub plans.
 
 #### `diagram-generation.agent.md`
-**Gap addressed**: No standard diagram workflow existed across projects.  
-Projects had `diagrams/` folders with no structure, inconsistent use of draw.io
-vs PlantUML, and no documented export commands. Diagram files were created ad-hoc
-and SVG exports were often missing.  
-**Decision**: Encode the standard folder structure (`drawio/svg/`, `plantuml/png/`,
-`data-model/`), the 8 required diagram types, VS Code extension setup, and CLI
-export commands as a permanent reference.
+No standard diagram workflow existed. Projects had unstructured `diagrams/` folders
+and inconsistent draw.io/PlantUML usage. Encodes the 10-type full UML suite from
+CODING_STANDARDS §7, folder structure, and CLI export commands.
+
+#### `ci-cd-pipeline.agent.md`
+Five workflow files (build-and-test, build-and-push, codeql, copilot-review,
+publish-on-tag) are complex and template-driven. The ISB EA Option 2 GitOps
+pattern (develop→direct dev commit, main→prod PR) is non-obvious. The image
+tagging strategy, yq GitOps update, Trivy scanning, and placeholder substitution
+all needed to be documented in one place.
+
+#### `local-dev.agent.md`
+The podman-compose setup, EF Core migration commands, `appsettings.Development.json.example`
+pattern, socket vs TCP auth differences for macOS MariaDB, and common local dev
+failures were all spread across READMEs with no single reference.
+
+#### `spec-kitty.agent.md`
+CODING_STANDARDS §11 covers three pages of spec-kitty workflow. Only HNW had a
+spec-kitty agent, and it was project-specific. The template needed a generic version
+with the full WP YAML frontmatter, `spec.md` required sections, init commands,
+validate-tasks, and the Linux EF Core LINQ gotcha (applicable to any project).
+
+#### `ef-core.agent.md`
+The Pomelo/MariaDB connection pattern, `db.Database.Migrate()` on startup (vs the
+dangerous `EnsureCreated()`), primary constructor pattern, migration naming conventions,
+and the Linux `ReadOnlySpan<string>.Contains()` overload bug were all scattered
+across project docs and discovered operationally. Centralised here as a reference.
 
 #### `bc-gov-devops.agent.md`
-**Gap addressed**: BC Gov Emerald platform knowledge was scattered across docs
-and re-discovered repeatedly.  
-The AVI InfraSettings `dataclass-low` finding (no VIP on Emerald), the five-step
-Artifactory project setup, and the two-NetworkPolicy-per-flow requirement were all
-discovered operationally and needed to be persisted.  
-**Decision**: Create a single BC Gov DevOps agent that serves as the canonical
-Emerald platform reference — Containerfile patterns, Helm requirements, NetworkPolicy
-templates, Artifactory steps, ArgoCD config, and health check patterns — all in
-one place.
+Emerald-specific platform facts (AVI InfraSettings, dataclass-low having no VIP,
+five-step Artifactory project setup, two-policy-per-flow NetworkPolicy requirement)
+were discovered through failures and needed to be persisted permanently.
 
 ---
 
@@ -103,17 +110,21 @@ one place.
 
 ```
 rl-project-template/.github/agents/
-├── session-workflow.agent.md    ← universal (every project)
-├── github-workflow.agent.md     ← universal (every project)
-├── diagram-generation.agent.md  ← universal (every project)
-└── bc-gov-devops.agent.md       ← BC Gov projects on Emerald
+├── session-workflow.agent.md      ← universal (every project)
+├── github-workflow.agent.md       ← universal (every project)
+├── diagram-generation.agent.md    ← universal (every project)
+├── ci-cd-pipeline.agent.md        ← projects using the template CI/CD workflows
+├── local-dev.agent.md             ← .NET + React/Vite projects with MariaDB
+├── spec-kitty.agent.md            ← all projects using spec-first development
+├── ef-core.agent.md               ← .NET projects using EF Core + Pomelo/MariaDB
+└── bc-gov-devops.agent.md         ← BC Gov projects on Emerald OpenShift
 
 <project>/.github/agents/
-├── (inherited from template)
-├── bc-gov-standards.agent.md    ← project-specific DataClass, design tokens
-├── network-policy.agent.md      ← project-specific NetworkPolicy templates
-├── openshift-health.agent.md    ← project-specific health endpoints + oc commands
-└── spec-kitty.agent.md          ← project-specific spec status table
+├── (inherited from template — copy relevant files at project init)
+├── bc-gov-standards.agent.md      ← project-specific DataClass, design tokens, namespaces
+├── network-policy.agent.md        ← project-specific NetworkPolicy templates
+├── openshift-health.agent.md      ← project-specific health endpoints + oc commands
+└── spec-kitty.agent.md            ← override with project-specific spec status table
 ```
 
 Generic agents in this template provide the foundation. Projects add specialised
