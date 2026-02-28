@@ -350,7 +350,49 @@ Each diagram file should carry the attribution header from Section 1.
 - Health checks: `/api/health` (basic) and `/api/health/details` (DB probe)
 - Passwords: ASP.NET Core `PasswordHasher` — never plain text or home-grown hashing
 - CORS: named policies — wildcard `DevCors` for local; explicit origin list `ProdCors` for production
-- `AI/securityNextSteps.md` documents the full hardening roadmap for every project
+- `AI/SECURITY_NEXT_STEPS.md` documents the full hardening roadmap for every project — copy from the template in `AI/SECURITY_NEXT_STEPS.md` and complete all fields
+
+### Input Validation (required on all API endpoints)
+
+- All incoming DTO/request types **must** use .NET data annotations: `[Required]`, `[StringLength]`,
+  `[Range]`, `[EmailAddress]`, etc.
+- Gate every controller action with `if (!ModelState.IsValid) return BadRequest(ModelState);`
+- **Never use `FromSqlRaw`** — use EF Core LINQ operators exclusively; if raw SQL is unavoidable
+  use `FromSqlInterpolated` with `$`-string parameters and document the exception in `SECURITY_NEXT_STEPS.md`
+- React: JSX auto-escapes string interpolation — **never** use `dangerouslySetInnerHTML`
+
+### Output Security (Frontend / nginx)
+
+Add the following security headers to `containerization/nginx.conf`:
+
+```nginx
+add_header Content-Security-Policy  "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:" always;
+add_header X-Frame-Options           "SAMEORIGIN" always;
+add_header X-Content-Type-Options    "nosniff" always;
+add_header Referrer-Policy           "strict-origin-when-cross-origin" always;
+add_header Permissions-Policy        "geolocation=(), microphone=(), camera=()" always;
+```
+
+### Audit Logging
+
+For any service storing data classified **Medium** or above:
+- Implement an EF Core `SaveChangesInterceptor` that writes an `AuditLog` record for every
+  `Added`, `Modified`, and `Deleted` entity — see `security-architect` agent skill for the
+  full interceptor pattern
+- Log **who** (`sub` claim), **what** (table + action), **which record** (PK), and **when** (UTC)
+- **Never** include PII in application log lines — log user ID (GUID) only, not name or email
+
+### CI Security Scanning Workflows
+
+Every project built from this template includes four security workflows:
+
+| Workflow | Gate | Trigger |
+|----------|------|---------|
+| `dependency-review.yml` | Blocks PR on CRITICAL/HIGH CVE in new deps | `pull_request` |
+| `trivy-scan.yml` (fs job) | Blocks PR on CRITICAL/HIGH CVE in source tree | `pull_request` |
+| `trivy-scan.yml` (image job) | Fails build on CRITICAL/HIGH CVE in container image | `push: develop` |
+| `secrets-scan.yml` | Blocks push/PR on detected secrets (Gitleaks) | `push` + `pull_request` |
+| `codeql.yml` | SAST — requires GitHub Advanced Security | `push` + `pull_request` |
 
 ---
 

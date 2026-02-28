@@ -60,7 +60,11 @@ git commit -m "chore: initialise from rl-project-template"
 6. **Update Containerfiles** — replace `<PROJECT_NAME>` placeholders in `containerization/` with your project name.
 7. **Move `gitops/`** — copy/move the `gitops/` skeleton into a new, separate repository and register it with ArgoCD.
 8. **Provision the platform** — follow the checklist in `docs/deployment/STANDARDS.md` Section 9.11 to register the project with BC Gov Platform Registry, Artifactory, and Vault before writing any pipeline code.
-9. **Add Artifactory credentials** as GitHub Secrets (`ARTIFACTORY_USERNAME`, `ARTIFACTORY_PASSWORD`) in the app repo settings.
+9. **Add GitHub Secrets** in the app repo settings:
+   - `ARTIFACTORY_USERNAME` and `ARTIFACTORY_PASSWORD` — required for image push/pull
+   - `GITOPS_TOKEN` — PAT with write access to the GitOps repo for image tag updates
+10. **Complete `AI/SECURITY_NEXT_STEPS.md`** — copy the template, fill in project identity, DataClass, and STRA/PIA status before the first test environment deploy. DataClass must be confirmed with your Ministry InfoSec — use `Medium` if unsure (Low has no VIP on Emerald).
+11. **Update `trivy-scan.yml`** — replace `<KEY>` and `<APP_NAME>` placeholders in the image scan job with your Artifactory project key and application name.
 
 ---
 
