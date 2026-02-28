@@ -18,9 +18,8 @@ on:
         default: check
 
 permissions:
-  issues: write         # to open alert issues
-  # variables: write is not a permission — gh variable set uses GITHUB_TOKEN
-  # which has implicit repo variable write access for Actions
+  issues: write     # open alert issues
+  actions: write    # gh variable set AG_DEVOPS_*_SHA (repo variable management)
 
 jobs:
   watch:
