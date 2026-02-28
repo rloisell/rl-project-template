@@ -1,0 +1,221 @@
+name: Watch bcgov/ag-devops for changes
+
+# Runs weekly on Monday morning. When monitored paths in ag-devops change,
+# opens a GitHub Issue summarising what changed and which agent skills to review.
+#
+# Manual trigger (workflow_dispatch) lets you re-baseline after you've applied
+# an update — just run with action: baseline.
+
+on:
+  schedule:
+    - cron: '0 14 * * 1'   # Every Monday at 06:00 PT / 14:00 UTC
+  workflow_dispatch:
+    inputs:
+      action:
+        description: '"check" (default) or "baseline" (update stored SHAs after applying changes)'
+        required: false
+        default: check
+
+permissions:
+  contents: write       # to commit updated baseline
+  issues: write         # to open alert issues
+
+jobs:
+  watch:
+    name: Detect ag-devops changes
+    runs-on: ubuntu-latest
+
+    env:
+      UPSTREAM: bcgov/ag-devops
+      BASELINE_FILE: .github/ag-devops-baseline.json
+
+    steps:
+      - name: Checkout template
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      # ── Fetch current tree SHAs from ag-devops via GitHub API ────────────────
+      - name: Fetch upstream tree SHAs
+        id: upstream
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "Fetching tree SHAs from $UPSTREAM ..."
+
+          # Paths to monitor — add/remove as ag-devops evolves
+          PATHS=(
+            "docs"
+            "cd/policies"
+            "helm"
+          )
+
+          declare -A CURRENT
+          for path in "${PATHS[@]}"; do
+            sha=$(gh api "repos/$UPSTREAM/contents/$path" \
+              --jq 'if type == "array" then map(.sha) | join(",") else .sha end' \
+              2>/dev/null || echo "not-found")
+            CURRENT["$path"]="$sha"
+            echo "  $path → $sha"
+          done
+
+          # Also capture the default branch HEAD SHA for display
+          HEAD=$(gh api "repos/$UPSTREAM/commits/main" --jq '.sha' 2>/dev/null \
+                 || gh api "repos/$UPSTREAM/commits/HEAD" --jq '.sha' 2>/dev/null \
+                 || echo "unknown")
+          echo "  HEAD → $HEAD"
+
+          # Write to a temp JSON file for comparison
+          python3 - <<EOF
+          import json, os
+          paths = ${PATHS[@]@Q}
+          # rebuild from env isn't clean in heredoc; write from bash vars via a file
+          EOF
+
+          # Build JSON via python using env vars passed as args
+          python3 -c "
+          import json, sys
+          data = {}
+          args = sys.argv[1:]
+          it = iter(args)
+          for k in it:
+              data[k] = next(it, 'unknown')
+          print(json.dumps(data, indent=2))
+          " \
+            "docs" "${CURRENT[docs]}" \
+            "cd/policies" "${CURRENT[cd/policies]}" \
+            "helm" "${CURRENT[helm]}" \
+            "HEAD" "$HEAD" \
+            > /tmp/current-shas.json
+
+          cat /tmp/current-shas.json
+          echo "head_sha=$HEAD" >> "$GITHUB_OUTPUT"
+
+      # ── Compare against stored baseline ──────────────────────────────────────
+      - name: Compare with baseline
+        id: compare
+        run: |
+          ACTION="${{ github.event.inputs.action || 'check' }}"
+
+          if [[ ! -f "$BASELINE_FILE" ]]; then
+            echo "No baseline found — treating as first run (will create baseline)."
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "first_run=true" >> "$GITHUB_OUTPUT"
+            cp /tmp/current-shas.json /tmp/baseline-shas.json
+            exit 0
+          fi
+
+          cp "$BASELINE_FILE" /tmp/baseline-shas.json
+
+          DIFF=$(python3 -c "
+          import json
+          with open('/tmp/baseline-shas.json') as f: baseline = json.load(f)
+          with open('/tmp/current-shas.json') as f: current = json.load(f)
+
+          changed = []
+          for k, v in current.items():
+              if k == 'HEAD':
+                  continue
+              old = baseline.get(k, 'not-tracked')
+              if old != v:
+                  changed.append(f'  - \`{k}\`: \`{old[:12] if len(old)>12 else old}\` → \`{v[:12] if len(v)>12 else v}\`')
+
+          if changed:
+              print('CHANGED')
+              for c in changed:
+                  print(c)
+          else:
+              print('NO_CHANGE')
+          ")
+
+          echo "diff_output<<DELIM" >> "$GITHUB_OUTPUT"
+          echo "$DIFF" >> "$GITHUB_OUTPUT"
+          echo "DELIM" >> "$GITHUB_OUTPUT"
+
+          if echo "$DIFF" | grep -q "^CHANGED"; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      # ── Open a GitHub Issue when changes detected ─────────────────────────────
+      - name: Open change-alert issue
+        if: steps.compare.outputs.changed == 'true' && (github.event.inputs.action || 'check') == 'check'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HEAD_SHA: ${{ steps.upstream.outputs.head_sha }}
+        run: |
+          FIRST_RUN="${{ steps.compare.outputs.first_run }}"
+          DIFF="${{ steps.compare.outputs.diff_output }}"
+
+          if [[ "$FIRST_RUN" == "true" ]]; then
+            TITLE="ag-devops watch: initial baseline created"
+            BODY="## ag-devops Baseline Initialised
+
+          The \`watch-ag-devops\` workflow ran for the first time.
+          Baseline SHAs stored in \`$BASELINE_FILE\`.
+
+          **Upstream HEAD:** [\`${HEAD_SHA:0:12}\`](https://github.com/$UPSTREAM/commit/$HEAD_SHA)
+
+          No action needed — future runs will diff against this baseline."
+          else
+            TITLE="ag-devops upstream changed — review agent skills"
+            BODY="## bcgov/ag-devops has changed
+
+          Content in monitored paths has changed since the last baseline.
+
+          **Upstream HEAD:** [\`${HEAD_SHA:0:12}\`](https://github.com/$UPSTREAM/commit/$HEAD_SHA)
+          **Compare:** https://github.com/$UPSTREAM/commits/main
+
+          ### Changed paths
+
+          $DIFF
+
+          ### Agent skills to review
+
+          | Changed path | Likely skills to update |
+          |---|---|
+          | \`docs/\` | \`bc-gov-devops/SKILL.md\`, \`networkpolicy-patterns.md\`, \`ci-cd-pipeline/SKILL.md\` |
+          | \`cd/policies/\` | \`ci-cd-pipeline/SKILL.md\` (Policy-as-Code Gate section) |
+          | \`helm/\` | \`bc-gov-devops/SKILL.md\` (ag-helm section), \`bc-gov-emerald/SKILL.md\` |
+
+          ### Process
+
+          1. Review changes at https://github.com/$UPSTREAM/commits/main
+          2. Ask Copilot: *\"Review the latest changes in bcgov/ag-devops and apply any relevant updates to the agent skills.\"*
+          3. After applying, re-baseline by running this workflow with \`action: baseline\`.
+
+          > .NET version stays at **10**. ag-helm is a reference pattern, not mandatory."
+          fi
+
+          gh issue create --title "$TITLE" --body "$BODY" \
+            --label "agent-skills,dependencies" 2>/dev/null \
+            || gh issue create --title "$TITLE" --body "$BODY"
+
+      # ── Update the baseline file ──────────────────────────────────────────────
+      - name: Update baseline (on change or explicit baseline action)
+        if: |
+          steps.compare.outputs.changed == 'true' ||
+          github.event.inputs.action == 'baseline'
+        run: |
+          cp /tmp/current-shas.json "$BASELINE_FILE"
+          echo "Updated $BASELINE_FILE"
+          cat "$BASELINE_FILE"
+
+      - name: Commit updated baseline
+        if: |
+          steps.compare.outputs.changed == 'true' ||
+          github.event.inputs.action == 'baseline'
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add "$BASELINE_FILE"
+          git diff --cached --quiet || \
+            git commit -m "chore: update ag-devops watch baseline [skip ci]"
+          git push origin HEAD
+
+      - name: No changes detected
+        if: steps.compare.outputs.changed == 'false'
+        run: |
+          echo "✅ ag-devops monitored paths are unchanged since last baseline."
+          cat "$BASELINE_FILE"

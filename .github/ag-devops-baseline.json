@@ -1,0 +1,8 @@
+{
+  "_note": "Auto-managed by .github/workflows/watch-ag-devops.yml — do not edit manually.",
+  "_instructions": "Run the workflow manually with action: baseline to initialise real SHAs.",
+  "docs": "not-yet-baselined",
+  "cd/policies": "not-yet-baselined",
+  "helm": "not-yet-baselined",
+  "HEAD": "not-yet-baselined"
+}
