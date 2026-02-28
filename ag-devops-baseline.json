@@ -1,1 +1,7 @@
-{"_note":"Managed by watch-ag-devops.yml — do not edit manually","docs":"not-yet-baselined","cd/policies":"not-yet-baselined","helm":"not-yet-baselined","HEAD":"not-yet-baselined"}
+{
+  "_note": "Managed by watch-ag-devops.yml",
+  "docs": "1216986fc682217248453312e31ed8b14b4c60da,1465076c71603d5c13ac3705d4256b5d7fda062c,1cb561f0ab218cce27a7857270b210429ee0c663,4853b0a476816b17ddd46239817cd3ac9b2a6526,a1f671bee6eeb186e14c32102d367062aeb2284c",
+  "cd/policies": "19bd1b9383fe30871b2448030d40008c115b220f,47c79618366499c157b6bd4d3fe8a63712c07b20,6a09816d2fa305074f4cc52fe92f889c20199185,75014da15e8d362d658a5f6e168bdc95a041cd26,87a61ba8684f74a6e0baccb36a02488bf3ec0458,8e47370bfe84fefdc35a607c9f89fa7752d5d347,e4d51dcd6cb130c88549aebb33ef659fd45e47aa",
+  "helm": "{\"message\":\"Not Found\",\"documentation_url\":\"https://docs.github.com/rest/repos/contents#get-repository-content\",\"status\":\"404\"}not-found",
+  "HEAD": "33a99af7f6ec2a9f7396fab3662df54b245d0093"
+}
