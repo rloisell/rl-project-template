@@ -3,8 +3,8 @@ name: Watch bcgov/ag-devops for changes
 # Runs weekly on Monday morning. When monitored paths in ag-devops change,
 # opens a GitHub Issue summarising what changed and which agent skills to review.
 #
-# Baseline is stored as repository variables (AG_DEVOPS_*_SHA) — no git push
-# required, so branch protection rules are irrelevant.
+# Baseline is stored in the ag-devops-baseline branch (an unprotected orphan
+# branch) — GITHUB_TOKEN can push there freely; only main has PR requirements.
 # Initialise by running manually with action: baseline.
 
 on:
@@ -18,8 +18,8 @@ on:
         default: check
 
 permissions:
+  contents: write   # push baseline to ag-devops-baseline (unprotected branch)
   issues: write     # open alert issues
-  actions: write    # gh variable set AG_DEVOPS_*_SHA (repo variable management)
 
 jobs:
   watch:
@@ -28,9 +28,15 @@ jobs:
 
     env:
       UPSTREAM: bcgov/ag-devops
+      BASELINE_BRANCH: ag-devops-baseline
+      BASELINE_FILE: ag-devops-baseline.json
 
     steps:
-      # No checkout needed — we only call GitHub API and manage repo variables.
+      - name: Checkout baseline branch
+        uses: actions/checkout@v4
+        with:
+          ref: ag-devops-baseline
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       # ── Fetch current tree SHAs from ag-devops via GitHub API ────────────────
       - name: Fetch upstream tree SHAs
@@ -64,30 +70,28 @@ jobs:
             echo "head_sha=$HEAD_SHA"
           } >> "$GITHUB_OUTPUT"
 
-      # ── Compare against baseline stored in repository variables ─────────────
+      # ── Compare against baseline stored in ag-devops-baseline branch ──────────
       - name: Compare with baseline
         id: compare
         env:
-          CURRENT_DOCS:      ${{ steps.upstream.outputs.docs_sha }}
-          CURRENT_POLICIES:  ${{ steps.upstream.outputs.policies_sha }}
-          CURRENT_HELM:      ${{ steps.upstream.outputs.helm_sha }}
-          BASELINE_DOCS:     ${{ vars.AG_DEVOPS_DOCS_SHA }}
-          BASELINE_POLICIES: ${{ vars.AG_DEVOPS_POLICIES_SHA }}
-          BASELINE_HELM:     ${{ vars.AG_DEVOPS_HELM_SHA }}
+          CURRENT_DOCS:     ${{ steps.upstream.outputs.docs_sha }}
+          CURRENT_POLICIES: ${{ steps.upstream.outputs.policies_sha }}
+          CURRENT_HELM:     ${{ steps.upstream.outputs.helm_sha }}
         run: |
-          CHANGED=""
+          BASELINE_DOCS=$(python3 -c "import json; d=json.load(open('$BASELINE_FILE')); print(d.get('docs',''))" 2>/dev/null || echo "")
+          BASELINE_POLICIES=$(python3 -c "import json; d=json.load(open('$BASELINE_FILE')); print(d.get('cd/policies',''))" 2>/dev/null || echo "")
+          BASELINE_HELM=$(python3 -c "import json; d=json.load(open('$BASELINE_FILE')); print(d.get('helm',''))" 2>/dev/null || echo "")
 
+          CHANGED=""
           [[ "$CURRENT_DOCS" != "$BASELINE_DOCS" ]] && \
             CHANGED+="  - \`docs/\`: \`${BASELINE_DOCS:0:12}\` -> \`${CURRENT_DOCS:0:12}\`\n"
-
           [[ "$CURRENT_POLICIES" != "$BASELINE_POLICIES" ]] && \
             CHANGED+="  - \`cd/policies/\`: \`${BASELINE_POLICIES:0:12}\` -> \`${CURRENT_POLICIES:0:12}\`\n"
-
           [[ "$CURRENT_HELM" != "$BASELINE_HELM" ]] && \
             CHANGED+="  - \`helm/\`: \`${BASELINE_HELM:0:12}\` -> \`${CURRENT_HELM:0:12}\`\n"
 
-          if [[ -z "$BASELINE_DOCS" && -z "$BASELINE_POLICIES" && -z "$BASELINE_HELM" ]]; then
-            echo "No baseline variables found — first run."
+          if [[ "$BASELINE_DOCS" == "not-yet-baselined" || -z "$BASELINE_DOCS" ]]; then
+            echo "No baseline found — first run."
             echo "first_run=true" >> "$GITHUB_OUTPUT"
             echo "changed=true"   >> "$GITHUB_OUTPUT"
           elif [[ -n "$CHANGED" ]]; then
@@ -117,7 +121,7 @@ jobs:
             BODY="## ag-devops Baseline Initialised
 
           The \`watch-ag-devops\` workflow ran for the first time.
-          Baseline SHAs stored as repository variables \`AG_DEVOPS_*_SHA\`.
+          Baseline stored in the \`ag-devops-baseline\` branch.
 
           **Upstream HEAD:** [\`${HEAD_SHA:0:12}\`](https://github.com/$UPSTREAM/commit/$HEAD_SHA)
 
@@ -154,30 +158,46 @@ jobs:
             --label "agent-skills,dependencies" 2>/dev/null \
             || gh issue create --title "$TITLE" --body "$BODY"
 
-      # ── Update baseline stored as repository variables ────────────────────────
-      - name: Update baseline variables
+      # ── Write updated baseline to ag-devops-baseline branch ───────────────────
+      - name: Update baseline file
         if: |
           steps.compare.outputs.changed == 'true' ||
           github.event.inputs.action == 'baseline'
         env:
-          GH_TOKEN:     ${{ secrets.GITHUB_TOKEN }}
           DOCS_SHA:     ${{ steps.upstream.outputs.docs_sha }}
           POLICIES_SHA: ${{ steps.upstream.outputs.policies_sha }}
           HELM_SHA:     ${{ steps.upstream.outputs.helm_sha }}
+          HEAD_SHA:     ${{ steps.upstream.outputs.head_sha }}
         run: |
-          REPO="${{ github.repository }}"
-          gh variable set AG_DEVOPS_DOCS_SHA     --body "$DOCS_SHA"     --repo "$REPO"
-          gh variable set AG_DEVOPS_POLICIES_SHA --body "$POLICIES_SHA" --repo "$REPO"
-          gh variable set AG_DEVOPS_HELM_SHA     --body "$HELM_SHA"     --repo "$REPO"
-          echo "Baseline variables updated:"
-          echo "  AG_DEVOPS_DOCS_SHA     = $DOCS_SHA"
-          echo "  AG_DEVOPS_POLICIES_SHA = $POLICIES_SHA"
-          echo "  AG_DEVOPS_HELM_SHA     = $HELM_SHA"
+          python3 -c "
+import json, os
+data = {
+  '_note': 'Managed by watch-ag-devops.yml',
+  'docs': os.environ['DOCS_SHA'],
+  'cd/policies': os.environ['POLICIES_SHA'],
+  'helm': os.environ['HELM_SHA'],
+  'HEAD': os.environ['HEAD_SHA'],
+}
+with open(os.environ.get('BASELINE_FILE', 'ag-devops-baseline.json'), 'w') as f:
+    json.dump(data, f, indent=2)
+print(json.dumps(data, indent=2))
+"
+
+      - name: Commit and push baseline
+        if: |
+          steps.compare.outputs.changed == 'true' ||
+          github.event.inputs.action == 'baseline'
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add "$BASELINE_FILE"
+          git diff --cached --quiet && echo "No changes to commit" && exit 0
+          git commit -m "chore: update ag-devops watch baseline [skip ci]"
+          git push origin "$BASELINE_BRANCH"
+          echo "Baseline updated on branch $BASELINE_BRANCH."
 
       - name: No changes detected
         if: steps.compare.outputs.changed == 'false'
         run: |
           echo "ag-devops monitored paths unchanged since last baseline."
-          echo "  docs        = ${{ vars.AG_DEVOPS_DOCS_SHA }}"
-          echo "  cd/policies = ${{ vars.AG_DEVOPS_POLICIES_SHA }}"
-          echo "  helm        = ${{ vars.AG_DEVOPS_HELM_SHA }}"
+          cat "$BASELINE_FILE"
