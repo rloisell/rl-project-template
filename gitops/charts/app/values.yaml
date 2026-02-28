@@ -5,6 +5,9 @@
 # Replace <LICENSE> and <APP_NAME> throughout.
 
 # ── GLOBAL ────────────────────────────────────────────────────────────────────
+global:
+  openshift: true    # Required on Emerald — enables OpenShift SCC mode in ag-helm library templates
+
 environment: dev
 licencePlate: <LICENSE>
 
