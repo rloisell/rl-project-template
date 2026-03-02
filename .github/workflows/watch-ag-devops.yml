@@ -34,7 +34,7 @@ jobs:
 
     steps:
       - name: Checkout baseline branch
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           ref: ag-devops-baseline
           token: ${{ secrets.GITHUB_TOKEN }}
