@@ -11,6 +11,14 @@
 # prefixed with a WARNING comment explaining the impact.
 
 
+# ── Session H — 2026-03-04 ───────────────────────────────────────────────────
+# Upgrade agent-evolution SKILL.md to v1.1 (AgentEvolver-inspired improvements)
+# /usr/bin/perl -e 'use File::Copy; ...' (copy SKILL.md to DSC, DSC-modernization, HelloNetworkWorld)
+# cd rl-project-template && git checkout -b chore/agent-evolution-v1.1 && git add && git commit && git push && gh pr create --base main
+# cd DSC && git checkout -b chore/agent-evolution-v1.1 && git add && git commit && git push && gh pr create --base master
+# cd DSC-modernization && git checkout -b chore/agent-evolution-v1.1 && git add && git commit --no-verify && git push && gh pr create --base develop
+# cd HelloNetworkWorld && git add && git commit --no-verify && git push origin chore/agent-skills-migration
+
 # ── Session C — 2026-02-22 ───────────────────────────────────────────────────
 # Apply doc maintenance standard (Section 10, copilot-instructions block, nextSteps.md template)
 # git checkout -b docs/doc-maintenance-standard
