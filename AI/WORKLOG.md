@@ -6,6 +6,50 @@
 
 ---
 
+## 2026-03-05 — Session I: rl-agents-n-skills shared repo + submodule migration
+
+**Objective**: Create `rl-agents-n-skills` as a standalone shared Claude Code plugin repo, wire it as a git submodule in all four repos that had `.github/agents/`, and add Claude Code support (`CLAUDE.md`, `.claude/settings.json`, project-specific `.claude/agents/`).
+
+### Actions taken
+- Installed Claude Code CLI v2.1.69 via `npm install -g @anthropic-ai/claude-code`
+- Researched Anthropic GitHub repos (claude-code, claude-cookbooks) to understand plugin/subagent/skill formats
+- Created GitHub repo `rloisell/rl-agents-n-skills` and initial commit (35 files, 4619 insertions)
+  - Copied all 12 VS Code persona SKILL.md folders and 5 shared skill folders from rl-project-template
+  - Authored 12 Claude Code subagent `.md` files with YAML frontmatter in `agents/`
+  - Created `.claude-plugin/plugin.json` manifest
+  - Created `CLAUDE.md` base instructions and updated `README.md` for dual-toolchain usage
+- **rl-project-template**: branch `feat/rl-agents-submodule`, removed 21 tracked agent files, added submodule, created `CLAUDE.md` + `.claude/settings.json`, updated `copilot-instructions.md` → PR #11 merged
+- **DSC**: same pattern, PR #3 merged to master
+- **DSC-modernization**: added submodule (agents didn't exist on main), auto-merge enabled, PR #26 awaiting CI
+- **HelloNetworkWorld**: same + migrated 3 project-specific agents (`network-policy`, `openshift-health`, `bc-gov-standards`) to `.claude/agents/` with Claude Code frontmatter, auto-merge enabled, PR #19 awaiting CI
+
+### Files created or modified
+
+**rl-agents-n-skills (new repo)**
+- `.claude-plugin/plugin.json` — plugin manifest
+- `agents/` — 12 Claude Code subagent .md files
+- `CLAUDE.md`, `README.md` — documentation
+
+**rl-project-template**
+- `.gitmodules` — submodule reference
+- `.github/agents` — now a submodule pointer (was 21 tracked files)
+- `CLAUDE.md` — project-level Claude Code instructions (new)
+- `.claude/settings.json` — plugin reference (new)
+- `.github/copilot-instructions.md` — added submodule note
+
+**DSC** — same pattern as rl-project-template + `CLAUDE.md` describing legacy Java project
+**DSC-modernization** — same + `CLAUDE.md` describing rewrite project
+**HelloNetworkWorld** — same + `.claude/agents/network-policy.md`, `.claude/agents/openshift-health.md`, `.claude/agents/bc-gov-standards.md`
+
+### Commits
+- `53e2d46` — feat: initial commit (rl-agents-n-skills)
+- `34ef63e` / PR #11 merged — feat: replace .github/agents with rl-agents-n-skills submodule (rl-project-template)
+- `9adc3cb` / PR #3 merged — feat: replace .github/agents with rl-agents-n-skills submodule (DSC)
+- `5efd6d8` / PR #26 auto-merge — feat: add rl-agents-n-skills submodule + Claude Code settings (DSC-modernization)
+- `5c02a4b` / PR #19 auto-merge — feat: replace .github/agents with rl-agents-n-skills submodule (HelloNetworkWorld)
+
+---
+
 ## 2026-03-04 — Session H: AgentEvolver-inspired improvements to agent-evolution
 
 **Objective**: Compare local `agent-evolution` SKILL.md against modelscope/AgentEvolver and apply the highest-ROI improvements.

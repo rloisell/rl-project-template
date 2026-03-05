@@ -3,6 +3,12 @@ AI/nextSteps.md,created,new file — nextSteps.md template following new doc mai
 CODING_STANDARDS.md,modified,added Section 10 — AI/nextSteps.md Maintenance Standard
 .github/copilot-instructions.md,modified,added doc maintenance guardrails block before Git Commit Format section
 AI/CHANGES.csv,modified,session C tracking rows
+.gitmodules,created,git submodule reference for rl-agents-n-skills
+.github/agents,modified,converted from tracked files to git submodule pointing to rloisell/rl-agents-n-skills
+CLAUDE.md,created,project-level Claude Code instructions
+.claude/settings.json,created,Claude Code plugin reference for rl-agents-n-skills submodule
+.github/copilot-instructions.md,modified,added submodule source note and Claude Code plugin documentation
+AI/WORKLOG.md,modified,session I entry
 AI/COMMANDS.sh,modified,session C commands
 AI/WORKLOG.md,modified,session C entry prepended
 AI/COMMIT_INFO.txt,modified,session C commit record

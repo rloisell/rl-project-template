@@ -48,3 +48,27 @@
 # git commit -m "fix: silence CodeQL failures on template repo (paths filter, remove schedule, v3→v4)"
 # git push origin fix/codeql-paths-filter-v4
 # gh pr create + merge
+
+
+# ── Session I — 2026-03-05 ───────────────────────────────────────────────────
+# Create rl-agents-n-skills shared repo + wire as submodule in all 4 repos
+# npm install -g @anthropic-ai/claude-code
+# git clone https://github.com/rloisell/rl-agents-n-skills.git (new repo)
+# git -C rl-agents-n-skills add -A && git commit -m "feat: initial commit" && git push
+# cd rl-project-template && git checkout -b feat/rl-agents-submodule
+# git rm -r .github/agents
+# git submodule add https://github.com/rloisell/rl-agents-n-skills.git .github/agents
+# git add -A && git commit && git push && gh pr create && gh pr merge 11 --squash
+# cd DSC && git stash && git checkout -b feat/rl-agents-submodule
+# git rm -r .github/agents && git submodule add ... && git add -A && git commit && git push
+# gh pr create && gh pr merge 3 --squash
+# cd DSC-modernization && git checkout main && git checkout -b feat/rl-agents-submodule
+# git submodule add ... && git add -A && git commit && git push
+# gh api repos/rloisell/DSC-modernization -X PATCH -f allow_auto_merge=true
+# gh pr create && gh pr merge 26 --auto --squash
+# cd HelloNetworkWorld && git checkout -b feat/rl-agents-submodule
+# git rm -r .github/agents && git submodule add ...
+# (created .claude/agents/network-policy.md, openshift-health.md, bc-gov-standards.md)
+# git add -A && git commit && git push
+# gh api repos/rloisell/HelloNetworkWorld -X PATCH -f allow_auto_merge=true
+# gh pr create && gh pr merge 19 --auto --squash
