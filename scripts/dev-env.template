@@ -1,0 +1,52 @@
+# .dev-env — <ProjectName>
+# Ryan Loiselle — Developer / Architect
+# GitHub Copilot — AI pair programmer / code generation
+# <Month Year>
+#
+# Service definitions consumed by ~/dev-tools/dev-ctl.
+# This file is auto-discovered — no registration step needed.
+# See rl-agents-n-skills/local-dev/SKILL.md for full reference.
+#
+# Usage:
+#   dev-ctl status                 # check all services
+#   dev-ctl start  <project-id>    # start this project
+#   dev-ctl stop   <project-id>    # stop non-shared services
+#   dev-ctl install-monitor        # cron health check + macOS alerts
+
+# ── Project identity ──────────────────────────────────────────────────────────
+
+# Unique ID (alphanumeric + underscore, no spaces)
+DEV_PROJECT_ID="<project_id>"
+
+# Human-readable label
+DEV_PROJECT_LABEL="<Project Name>"
+
+# Space-separated service IDs declared below
+# Convention: shared services first (e.g. mariadb), then project-specific
+DEV_SERVICES="mariadb <project_id>_api <project_id>_frontend"
+
+# ── mariadb  (shared — copy this block verbatim, only change SETUP) ───────────
+
+DEV_SVC_mariadb_LABEL="MariaDB 10.11 (:3306)"
+DEV_SVC_mariadb_SHARED="true"
+DEV_SVC_mariadb_CHECK='mariadb --skip-ssl -e "SELECT 1;" >/dev/null 2>&1'
+DEV_SVC_mariadb_START="brew services start mariadb@10.11"
+DEV_SVC_mariadb_TIMEOUT=15
+# Runs once per project after service is up — create DB if needed
+DEV_SVC_mariadb_SETUP="mariadb --skip-ssl -e 'CREATE DATABASE IF NOT EXISTS <project_id>_dev;' >/dev/null 2>&1 || true"
+
+# ── <project_id>_api ──────────────────────────────────────────────────────────
+
+DEV_SVC_<project_id>_api_LABEL="<Project> API (:<api-port>)"
+DEV_SVC_<project_id>_api_CHECK='curl -sf --max-time 3 http://localhost:<api-port>/health/live >/dev/null 2>&1'
+DEV_SVC_<project_id>_api_START='mkdir -p /tmp/dev-ctl/logs /tmp/dev-ctl/pids; pkill -f "dotnet.*<AssemblyName>" 2>/dev/null||true; sleep 1; cd "/Users/rloisell/Documents/developer/<RepoDir>/src/<ProjectName>.Api" && nohup dotnet run --launch-profile <LaunchProfileName> < /dev/null > /tmp/dev-ctl/logs/<project_id>_api.log 2>&1 & echo $! > /tmp/dev-ctl/pids/<project_id>_api.pid'
+DEV_SVC_<project_id>_api_STOP='pkill -f "dotnet.*<AssemblyName>" 2>/dev/null || true'
+DEV_SVC_<project_id>_api_TIMEOUT=30
+
+# ── <project_id>_frontend ─────────────────────────────────────────────────────
+
+DEV_SVC_<project_id>_frontend_LABEL="<Project> Frontend (:<frontend-port>)"
+DEV_SVC_<project_id>_frontend_CHECK='curl -sf --max-time 3 http://localhost:<frontend-port> >/dev/null 2>&1'
+DEV_SVC_<project_id>_frontend_START='mkdir -p /tmp/dev-ctl/logs /tmp/dev-ctl/pids; lsof -iTCP:<frontend-port> -sTCP:LISTEN -n 2>/dev/null | awk "NR>1{print \$2}" | xargs kill -9 2>/dev/null||true; sleep 1; cd "/Users/rloisell/Documents/developer/<RepoDir>/src/<ProjectName>.WebClient" && nohup npx vite --mode development --port <frontend-port> < /dev/null > /tmp/dev-ctl/logs/<project_id>_frontend.log 2>&1 & echo $! > /tmp/dev-ctl/pids/<project_id>_frontend.pid'
+DEV_SVC_<project_id>_frontend_STOP='lsof -iTCP:<frontend-port> -sTCP:LISTEN -n 2>/dev/null | awk "NR>1{print \$2}" | xargs kill -9 2>/dev/null || true'
+DEV_SVC_<project_id>_frontend_TIMEOUT=15

@@ -4,6 +4,27 @@
 
 ---
 
+## dev-ctl — Consolidated Dev Manager
+
+All projects on this machine are managed by `~/dev-tools/dev-ctl`.
+Each project contributes a `.dev-env` file; `dev-ctl` auto-discovers it.
+
+```bash
+dev-ctl start  <project-id>   # start this project's services
+dev-ctl stop   <project-id>   # stop non-shared services
+dev-ctl status                # health table — all projects
+dev-ctl install-monitor       # cron every 5 min + macOS alerts
+```
+
+**To scaffold this project:**
+1. Copy `scripts/dev-env.template` to `.dev-env` in the project root
+2. Fill in `DEV_PROJECT_ID`, ports, paths, and launch profile name
+3. Run `dev-ctl status` — the project appears immediately
+
+See `rl-agents-n-skills/local-dev/SKILL.md` for the full reference.
+
+---
+
 ## Prerequisites
 
 | Tool | Version | Notes |
@@ -20,9 +41,9 @@
 
 | Service | Port | Start Command |
 |---------|------|---------------|
-| API | `http://localhost:5005` | `cd src/<Project>.Api && dotnet run` |
-| Frontend | `http://localhost:5173` | `cd src/<Project>.WebClient && npm run dev` |
-| MariaDB | `3306` | system service or Docker |
+| API | `http://localhost:5005` | `dev-ctl start <project-id>` or `cd src/<Project>.Api && dotnet run` |
+| Frontend | `http://localhost:5173` | `dev-ctl start <project-id>` or `cd src/<Project>.WebClient && npm run dev` |
+| MariaDB | `3306` | shared — `dev-ctl` starts it once for all projects |
 
 ---
 
